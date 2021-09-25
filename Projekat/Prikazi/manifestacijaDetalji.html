@@ -1,0 +1,682 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="/Content/Site.css" />
+    <meta charset="utf-8" />
+    <script src="../Scripts/jquery-3.3.1.min.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+          integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+          crossorigin="" />
+
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin=""></script>
+
+
+    <title>Detalji manifestacije</title>
+
+    <script type="text/javascript">
+
+       
+
+        $(document).ready(function () {
+
+
+          
+
+            //var prosledjeniNaziv = getParameterByName('naziv');
+            //var naziv = getParameterByName('naziv');
+            //prosledjeniNaziv = naziv.substr(0, naziv.indexOf('?'));
+
+
+            $("#manifestacijaDetalji").click(function () {
+
+                var pom = getParameterByName('tipKorisnika');
+               
+                if (pom == "KUPAC") {
+                    location.href = "kupacPrikaz.html";
+                } else if (pom == "PRODAVAC") {
+                    location.href = "prodavacPrikaz.html";
+
+                } else if (pom == "ADMINISTRATOR") {
+
+                    location.href = "adminPrikaz.html";
+                } else {
+                    history.back();
+                }
+            });
+
+            $("#registracijaDetalji").click(function () {
+
+                location.href = "Registracija.html";
+
+            });
+
+            var prosledjeniNaziv = "";
+
+            var tipKorisnika = getParameterByName('tipKorisnika');
+
+
+
+
+
+            if (tipKorisnika == "KUPAC" || tipKorisnika == "PRODAVAC" || tipKorisnika == "ADMIN") {
+                var naziv = getParameterByName('naziv');
+                prosledjeniNaziv = naziv.substr(0, naziv.indexOf('?'));
+
+
+                $("#pregled").show();
+            } else {
+                prosledjeniNaziv = getParameterByName('naziv');
+                $("#pregled").hide();
+
+
+            }
+
+
+
+
+
+            if (tipKorisnika == "PRODAVAC" || tipKorisnika == "ADMIN") {
+
+                $("#pregled").hide();
+
+                $.get("/prodavacPrikaz/vratiKomentare?naziv=" + prosledjeniNaziv, function (data) {
+
+                    PrikaziKomentare(data);
+                });
+
+            } else {
+
+
+                $.get("/index/vratiSveKomentareManifestacije?naziv=" + prosledjeniNaziv, function (data) {
+
+                    PrikaziKomentare(data);
+                });
+            }
+
+
+
+            //alert(tipKupca);
+
+            //alert(prosledjeniNaziv);
+
+            if (tipKorisnika == "KUPAC") {
+
+                var dodaj = "";
+                dodaj += `<h3 style="text-align:center"> Komentarisanje </h3>`
+                dodaj += `<label for="komentar" class="elementi_manifestacije">Unesite komentar</label>`;
+                dodaj += ` <textarea style="margin-left:60px;" id="komentar" class="text_komentara"></textarea>`;
+                dodaj += `<label style="margin-left:35px; margin-top:15px;" for="novaOcena">Ocenite manifestaciju</label>`;
+                dodaj += `<input  type="text" name="novaOcena"  style="margin-left:10px; margin-top:15px;"/>`
+                dodaj += '<button id="potvrdiKomentarisanje" style="margin-left:175px; margin-top:20px;"> Potvrdi </button>';
+
+
+
+
+
+                $(document).on("click", "#potvrdiKomentarisanje", function () {
+
+                    //alert("pokusaj komentarisanja");
+                    var objekat = new Object();
+                    objekat.TextKomentara = $("textarea#komentar").val();
+                    objekat.OcenaKorisnika = $("input[type=text][name=novaOcena]").val();
+                    objekat.NazivManifestacije = $("input[type=text][name=nazivDetalji]").val();
+
+                    //console.log(objekat);
+
+                    var poruka = "";
+                    var validacija = true;
+
+                    if (objekat.TextKomentara == "") {
+
+                        poruka += "Morate uneti komentar!\n";
+                        validacija = false;
+                    }
+
+                    if (objekat.TextKomentara.length < 10) {
+
+                        poruka += "Komentar mora imati minimalno 10 karaktera\n";
+                        validacija = false;
+                    }
+
+                    if (objekat.OcenaKorisnika == "") {
+
+                        poruka += "Morate uneti ocenu!\n";
+                        validacija = false;
+                    }
+
+
+
+                    if (parseInt(objekat.OcenaKorisnika) < 1 || parseInt(objekat.OcenaKorisnika) > 5) {
+
+                        poruka += "Ocena mora biti u intervalu od 1 do 5!\n";
+                        validacija = false;
+
+                    }
+
+
+                    if (validacija) {
+
+                        $.ajax({
+                            url: '/kupacPrikaz/postavljanjeKomentara',
+                            type: "POST",
+                            contentType: "application/json; charset=utf-8",
+                            dataType: "json",
+                            data: JSON.stringify(objekat),
+                            statusCode: {
+                                200: function () {
+
+
+                                    alert("Uspesno komentarisanje!");
+
+                                },
+                                401: function (data) {
+
+                                    alert(data.responseText);
+                                },
+                                403: function (data) {
+                                    alert(data.responseText);
+                                }
+                            },
+                            complete: function () {
+
+                                location.href = "kupacPrikaz.html";
+                            }
+
+                        });
+                    } else {
+                        alert(poruka);
+                    }
+
+
+
+                });
+
+
+
+                $("#pregled").html(dodaj);
+            }
+
+            $.get("/index/vratiDetalje?naziv=" + prosledjeniNaziv, function (data, status) {
+
+                //alert(data.Naziv);
+
+                //alert(data.PosterManifestacije);
+
+             
+
+
+                $("#slika_manifestacije").attr('src', '/Slike/' + data.PosterManifestacije.slice(11, data.PosterManifestacije.length));
+
+                $("input[type=text][name=nazivDetalji]").val(data.Naziv);
+                $("select[name=tipManfistacije]").val(data.TipManifestacije);
+                $("input[type=text][name=brojMesta]").val(data.BrojMesta);
+                $("input[type=text][name=preostaloKarata]").val(data.PreostaloKarata);
+                $("input[type=text][name=cena]").val(data.Cena);
+                $("select[name=statusManifestacije]").val(data.Status);
+                $("input[type=text][name=ulica]").val(data.MestoOdrzavanja.Adresa.Ulica);
+                $("input[type=text][name=broj]").val(data.MestoOdrzavanja.Adresa.Broj);
+                $("input[type=text][name=mestoDetalji]").val(data.MestoOdrzavanja.Adresa.Mesto);
+                $("input[type=text][name=postanskiBroj]").val(data.MestoOdrzavanja.Adresa.PostanskiBroj);
+                if (data.ProsecnaOcena == "-1") {
+                    $("input[type=text][name=ocenaManifestacije]").val("Ne postoje ocene");
+                } else {
+                    $("input[type=text][name=ocenaManifestacije]").val(data.ProsecnaOcena);
+                }
+
+                $("input[type=datetime-local][name=datumManifestacije]").val(data.DatumVremeManifestacije.substring(0, data.DatumVremeManifestacije.length - 3));
+                //alert(data.DatumVremeManifestacije.substring(0, data.DatumVremeManifestacije.length - 3));
+
+                var tipKorisnika = getParameterByName('tipKorisnika');
+                if (tipKorisnika == "ADMIN") {
+
+                    var pom = "";
+                    pom += `<div class ="elementi_manifestacije" style="margin-top:5px;"> <button style="width: 56px;" id="` + data.Naziv + `"> Obrisi </button></div>`;
+                    $("#brisanjeAdmin").append(pom);
+                    $(document).on("click", "#" + data.Naziv, function () {
+
+
+                        var objekat = new Object();
+                        objekat.Naziv = data.Naziv;
+
+
+
+
+
+                        $.ajax({
+                            url: '/adminPrikaz/logickiObrisiManifestaciju',
+                            type: "POST",
+                            contentType: "application/json; charset=utf-8",
+                            dataType: "json",
+                            data: JSON.stringify(objekat),
+                            statusCode: {
+                                200: function () {
+
+                                    alert("Uspesno obrisana manifestacija!");
+                                    PrikaziKomentare(data);
+
+                                },
+                                401: function (data) {
+                                    alert(data.responseText);
+                                },
+                                403: function (data) {
+
+                                    alert(data.responseText);
+
+
+                                }
+
+
+
+                            },
+                            complete: function (data) {
+
+                                location.href = "adminPrikaz.html";
+                            }
+
+                        });
+
+
+
+                    });
+
+                }
+
+            });
+
+
+        });
+
+
+       
+
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+        function PrikaziKomentare(data) {
+
+            var sviKomentari = "";
+
+            //prikazaneManifestacije = data;
+            // console.log(prikazaneManifestacije);
+
+
+            $.each(data, function (key, value) {
+
+
+                var naziv = value.ManifestacijaNaziv;
+                var username = value.UsernameKupacKometarisao;
+                var tekstKomentara = value.TekstKomentara;
+                var ocena = value.Ocena;
+                var id = value.IdKomentara;
+
+
+
+                sviKomentari += `<div class="pojedinacni_komentar" style="height: 350px">`;
+
+                sviKomentari += `<label class="elementi_manifestacije">` + username + `</label >`;
+                sviKomentari += `<textarea class="text_komentara" disabled>` + tekstKomentara + ` </textarea >`;
+                sviKomentari += `<div class="elementi_manifestacije">` + ocena + " &#9734;" + `</div>`;
+
+                var tipKorisnika = getParameterByName('tipKorisnika');
+                if (tipKorisnika == "PRODAVAC" || tipKorisnika == "ADMIN") {
+
+                    //sviKomentari += `<button id="` + value.IdKomentara + `"> Odobri </button>`;
+
+                    if (!value.Odobren && !value.Odbijen) {
+
+
+                        if (tipKorisnika != "ADMIN") {
+
+
+
+                            sviKomentari += `<div class ="elementi_manifestacije" style="margin-top:5px"> <button id="` + "odobravanje" + value.IdKomentara + `"> Odobri </button></div>`;
+
+                            $(document).on("click", "#odobravanje" + value.IdKomentara, function () {
+
+
+                                var objekat = new Object();
+                                objekat.Username = value.IdKomentara;
+
+
+
+
+
+                                $.ajax({
+                                    url: '/prodavacPrikaz/odobriKomentar',
+                                    type: "POST",
+                                    contentType: "application/json; charset=utf-8",
+                                    dataType: "json",
+                                    data: JSON.stringify(objekat),
+                                    statusCode: {
+                                        200: function () {
+
+                                            alert("Uspesno odobren komentar!");
+                                            PrikaziKomentare(data);
+
+                                        },
+                                        403: function (data) {
+
+                                            alert(data.responseText);
+
+
+                                        }
+
+
+
+                                    },
+                                    complete: function (data) {
+
+                                        location.reload();
+                                    }
+
+                                });
+
+
+
+                            });
+
+
+
+                            sviKomentari += `<div class ="elementi_manifestacije" style="margin-top:5px"> <button id="` + "odbijanje" + value.IdKomentara + `"> Odbijanje </button></div>`;
+
+                            $(document).on("click", "#odbijanje" + value.IdKomentara, function () {
+
+
+                                var objekat = new Object();
+                                objekat.Username = value.IdKomentara;
+
+
+
+
+
+                                $.ajax({
+                                    url: '/prodavacPrikaz/odbijanjeKomentara',
+                                    type: "POST",
+                                    contentType: "application/json; charset=utf-8",
+                                    dataType: "json",
+                                    data: JSON.stringify(objekat),
+                                    statusCode: {
+                                        200: function () {
+
+                                            alert("Uspesno odbijen komentar!");
+                                            PrikaziKomentare(data);
+
+                                        },
+                                        403: function (data) {
+
+                                            alert(data.responseText);
+
+
+                                        }
+
+
+
+                                    },
+                                    complete: function (data) {
+
+                                        location.reload();
+                                    }
+
+                                });
+
+
+
+                            });
+                        }
+
+
+                    } else {
+
+                        if (value.Odobren)
+                            sviKomentari += `<div class="elementi_manifestacije">` + "ODOBREN" + `</div>`;
+
+
+                        if (value.Odbijen)
+                            sviKomentari += `<div class="elementi_manifestacije">` + "ODBIJEN" + `</div>`;
+
+
+                    }
+                }
+
+
+                sviKomentari += `</div>`;
+
+
+            });
+
+
+
+            $("#komentari_manifestacije").append(sviKomentari);
+
+        }
+
+
+
+
+
+    </script>
+</head>
+<body>
+
+    <div class="menu_div">
+        <div id="manifestacijaDetalji" class="menu_izbor" style="float: left"> Manifestacije</div>
+        <div id="registracijaDetalji" class="menu_izbor" style="margin-right: 5px"> Registracija </div>
+
+
+    </div>
+
+
+
+
+
+
+
+    <div class="detalji_manifestacije">
+
+
+        <div class="dodaj_manifestaciju" style="height: 960px; margin-left:200px; margin-right:0px; float:left; ">
+
+            <img id="slika_manifestacije" style="width:570px; height:250px;" src="" />
+
+            <h3 style="text-align: center;">Detalji manifestacije</h3>
+
+            <div class="labele_div" style="height:600px">
+                <label for="nazivDetalji"> Naziv </label> <br />
+                <label for="tipManifestacije">Tip manifestacije</label>  <br />
+                <label for="brojMesta"> Broj mesta </label>  <br />
+                <label for="preostaloKarata"> Preostalo karata </label>
+                <label style="margin-top:25px" for="cena"> Cena karte </label>  <br />
+                <label for="statusManifestacije"> Status </label>
+                <label style="margin-top:25px" for="ulica"> Ulica </label>  <br />
+                <label for="broj"> Broj ulice </label>  <br />
+                <label for="mestoDetalji"> Mesto </label>  <br />
+                <label for="postanskiBroj"> Postanski broj </label>  <br />
+                <label for="ocenaManifestacije"> Ocena manifestacije</label>
+                <label style="margin-top:30px" for="datumManifestacije"> Datum manifestacije </label>  <br />
+
+
+
+            </div>
+
+            <div class="inputi_div_dodaj_manifestaciju" style="height:600px;">
+                <input id="potrebno" type="text" name="nazivDetalji"  required/> <br />
+
+                <select class="dodajManifestacijuSelect" id="nacin" name="tipManfistacije" disabled>
+                    <option value="0">KONCERT</option>
+                    <option value="1">FESTIVAL</option>
+                    <option value="2">POZORISTE</option>
+                </select> <br />
+                <input type="text" name="brojMesta" readonly /> <br />
+                <input type="text" name="preostaloKarata" readonly /> <br />
+                <input type="text" name="cena" readonly /> <br />
+                <select class="dodajManifestacijuSelect" id="nacin" name="statusManifestacije" disabled>
+                    <option value="0">AKTIVNO</option>
+                    <option value="1">NEAKTIVNO</option>
+                </select> <br />
+                <input type="text" name="ulica" readonly /> <br />
+                <input type="text" name="broj" readonly /> <br />
+                <input type="text" name="mestoDetalji" readonly /> <br />
+                <input type="text" name="postanskiBroj" readonly /> <br />
+                <input type="text" name="ocenaManifestacije" readonly /> <br />
+                <input style="width: 180px; " type="datetime-local" name="datumManifestacije" readonly /> <br />
+
+
+
+
+            </div>
+
+            <div id="brisanjeAdmin"></div>
+
+
+
+        </div>
+
+        <div id="mapid" class="mapa_div" style="margin-top:50px; margin-bottom:0px;"></div>
+
+
+
+        <script>
+            var mymap = L.map('mapid').setView([45.249059739446885, 19.825387001037598], 13);
+
+            L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+                maxZoom: 18,
+                id: 'mapbox/streets-v11',
+                tileSize: 512,
+                zoomOffset: -1,
+                accessToken: 'pk.eyJ1IjoicHJvYm5pZ2ciLCJhIjoiY2tmNXprMWNvMDlzMTJyb3p1N2Q4M3ZmaCJ9.a5MRjmQP2gh0nCvEmm_w4Q'
+            }).addTo(mymap);
+
+
+            var prosledjeniNaziv = "";
+
+            var tipKorisnika = getParameterByName('tipKorisnika');
+
+
+
+
+
+            if (tipKorisnika == "KUPAC" || tipKorisnika == "PRODAVAC" || tipKorisnika == "ADMIN") {
+                var naziv = getParameterByName('naziv');
+                prosledjeniNaziv = naziv.substr(0, naziv.indexOf('?'));
+              
+            } else {
+                prosledjeniNaziv = getParameterByName('naziv');
+               
+
+            }
+
+
+            $.get("/index/vratiDetalje?naziv=" + prosledjeniNaziv, function (data, status) {
+
+                var objekat = new Object();
+                objekat.NazivManifestacije = data.Naziv;
+                //alert(objekat.NazivManifestacije);
+              //  console.log(objekat);
+
+                $.ajax({
+                    url: '/index/vratiKoordinateManifestacije',
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    data: JSON.stringify(objekat),
+                    success: function (data) {
+                        console.log(data);
+                       // alert(data.Sirina);
+                        var marker = L.marker([data.Duzina, data.Sirina]).addTo(mymap);
+
+                    }
+
+
+
+
+                });
+
+
+
+
+
+
+            });
+
+           
+          
+
+            
+
+            /*function onMapClick(e) {
+                mymap.removeLayer(marker);
+                marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(mymap);
+                alert("You clicked the map at " + e.latlng);
+
+
+                var koordinate = new Object();
+                koordinate.Duzina = e.latlng.lat;
+                koordinate.Sirina = e.latlng.lng;
+
+                $.ajax({
+                    url: '/prodavacPrikaz/sacuvajKoordinate',
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    data: JSON.stringify(koordinate),
+                    success: function (data) {
+                        console.log("uspesno");
+
+
+                    }
+
+
+
+
+                });
+
+
+
+                //console.log(e.latlng);
+                // alert(e.latlng.lng);
+                //console.log(marker);
+
+            }
+
+            mymap.on('click', onMapClick);*/
+
+        </script>
+
+
+
+
+        <div class="div_komentarisanje" id="pregled" style="margin-top:10px">
+
+        </div>
+
+
+        <div id="komentari_manifestacije" class="komentari_manifestacije">
+            <h3 style="text-align: center">Komentari manifestacije</h3>
+
+
+
+
+
+        </div>
+
+
+
+    </div>
+    
+
+    <footer>Nikola Mijoni&#263; PR49/2017</footer>
+
+</body>
+</html >

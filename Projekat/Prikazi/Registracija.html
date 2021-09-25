@@ -1,0 +1,203 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+   
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="/Content/Site.css" />
+    <meta charset="utf-8" />
+    <script src="../Scripts/jquery-3.3.1.min.js"></script>
+
+    
+    <title>Registracija</title>
+
+    <script>
+
+        $(document).ready(function () {
+
+            $("#registracijaButton").click(function () {
+
+
+                var objekat = new Object();
+
+                objekat.Username = $("input[type=text][name=usernameRegistracija]").val();
+                objekat.Password = $("input[type=password][name=passwordRegistracija]").val();
+                objekat.Ime = $("input[type=text][name=imeRegistracija]").val();
+                objekat.Prezime = $("input[type=text][name=prezimeRegistracija]").val();
+                objekat.Pol = $("input[type=radio][name=polRegistracija]:checked").val();
+                objekat.DatumRodjenja = $("input[type=datetime-local][name=datumRodjenjaRegistracija]").val();
+
+                //console.log(objekat);
+
+                var validacijaObavestenje = "";
+                var validacijUspesna = true;
+
+                if (objekat.Username.trim() == "") {
+                    validacijaObavestenje += "Morate uneti username!\n";
+                    validacijUspesna = false;
+                }
+
+                if (objekat.Username.length < 6) {
+
+                    validacijaObavestenje += "Username mora imati bar 6 karaktera!\n";
+                    validacijUspesna = false; 
+                }
+
+
+
+                //provera da li je jedinstven username??? ili cu na serveru
+
+                if (objekat.Password.trim() == "") {
+                    validacijaObavestenje += "Morate uneti password!\n";
+                    validacijUspesna = false;
+                }
+
+                if (objekat.Password.length < 6) {
+
+                    validacijaObavestenje += "Password mora imati bar 6 karaktera!\n";
+                    validacijUspesna = false;
+                }
+
+
+
+                if (objekat.Ime.trim() == "") {
+                    validacijaObavestenje += "Morate uneti ime!\n";
+                    validacijUspesna = false;
+                }
+
+                if (objekat.Prezime.trim() == "") {
+                    validacijaObavestenje += "Morate uneti prezime!\n";
+                    validacijUspesna = false;
+                }
+
+                if (objekat.Pol == "Muski") {
+                    objekat.Pol = 0;
+                } else {
+                    objekat.Pol = 1;
+                }
+
+                //console.log(objekat.DatumRodjenja);
+
+                if (objekat.DatumRodjenja.trim() == "") {
+                    validacijaObavestenje += "Morate izabrati datum rodjenja!\n";
+                    validacijUspesna = false;
+                }
+
+                console.log(new Date(Date.now()));
+
+                if (new Date(objekat.DatumRodjenja) >= new Date(Date.now())) {
+                    //console.log("Datum manifestacije mora biti u buducem vremenu!");
+                    validacijaObavestenje += "Datum rodjenja mora biti u proslom vremenu!\n";
+                    validacijUspesna = false;
+                }
+
+                if (validacijUspesna) {
+
+                    $.ajax({
+                        url: '/index/registrujKorisnika',
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: JSON.stringify(objekat),
+                        statusCode: {
+                            200: function (data) {
+
+                                var text = "Uspesno registrovan korisnik: " + data.Username;
+                                alert(text);
+
+                            },
+                            403: function (data) {
+
+                                alert(data.responseText);
+
+
+                            }
+
+                        },
+                        success: function (data) {
+                            // console.log(data);
+                            location.href = "Logovanje.html";
+
+                        }
+
+                    });
+
+
+                } else {
+                    alert(validacijaObavestenje);
+                }
+
+
+
+                
+                
+            });
+                
+            $("#registracijaRegistracija").click(function () {
+
+                location.href = "Registracija.html";
+
+            });
+               
+            $("#manifestacijeRegistacija").click(function () {
+
+                location.href = "index.html";
+
+            });
+
+            $("#logovanjeRegistracija").click(function () {
+                location.href = "Logovanje.html";
+            });
+
+        });
+
+    </script>
+
+</head>
+<body>
+
+    <div class="menu_div">
+        <div id="manifestacijeRegistacija" class="menu_izbor" style="float: left"> Manifestacije</div>
+        <div id="registracijaRegistracija" class="menu_izbor" style="margin-right: 5px"> Registracija </div>
+        <div id="logovanjeRegistracija" class="menu_izbor"> Logovanje </div>
+
+    </div>
+
+    <div class="dodaj_manifestaciju" style="height:500px">
+        <h2 style="text-align:center">Registracija</h2>
+        <div class="labele_div" style="height:350px">
+            <label for="usernameRegistracija"> Username </label> <br />
+            <label for="passwordRegistracija"> Password </label>  <br />
+            <label for="imeRegistracija"> Ime </label>  <br />
+            <label for="prezimeRegistracija"> Prezime </label>  <br />
+            <label style="margin-top:30px" for="polRegistracija"> Pol </label>  <br />
+            <label style="margin-top:40px" for="datumRodjenjaRegistracija"> Datum rodjenja </label>  <br />
+
+        </div>
+
+        <div class="inputi_div_dodaj_manifestaciju" style="height:350px">
+            <input type="text" name="usernameRegistracija" /> <br />
+            <input type="password" name="passwordRegistracija" /> <br />
+            <input type="text" name="imeRegistracija" /> <br />
+            <input type="text" name="prezimeRegistracija" /> <br />
+
+            <label for=" polRegistracija">Muski</label>
+            <input type="radio" name="polRegistracija" value="Muski" checked>
+
+            <label for="polRegistracija">Zenski</label>
+            <input type="radio" name="polRegistracija" value="Zenski">
+
+
+            <input style="width: 150px; margin-top:30px;" type="datetime-local" name="datumRodjenjaRegistracija" /> <br />
+
+
+
+
+        </div>
+        <button id="registracijaButton" style="margin-bottom:200px">Registruj se</button>
+    </div>
+
+    <footer>Nikola Mijoni&#263; PR49/2017</footer>
+
+
+</body>
+</html>

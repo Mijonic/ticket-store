@@ -1,0 +1,449 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="/Content/Site.css" />
+    <script src="../Scripts/jquery-3.3.1.min.js"></script>
+    <title>Rezervacija karte</title>
+
+    <script type="text/javascript">
+
+        var cenaPomocna;
+        var imeTipaKorisnika;
+        
+        $(document).ready(function () {
+
+
+            $.ajax({
+                url: '/kupacPrikaz/vratiUlogovanogKupca',
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                statusCode: {
+
+                    401: function (data) {
+
+                        //console.log(data);
+                        alert("Morate biti ulogovani kao kupac!");
+                        //alert(data.responseText);
+                        location.href = history.go(-1)
+
+                    }
+
+                }
+
+
+            });
+            
+            var prosledjeniNaziv = getParameterByName('naziv');
+
+            $.get("/index/vratiDetalje?naziv=" + prosledjeniNaziv, function (data, status) {
+
+                //alert(data.Naziv);
+
+                cenaPomocna = data.Cena;
+
+                poruka = "Cena Regular karte: " + cenaPomocna + "$";
+                poruka += "\nCena FanPit karte: " + cenaPomocna * 2 + "$";
+                poruka += "\nCena Vip karte: " + cenaPomocna * 4 + "$";
+
+                alert(poruka);
+
+
+                $("input[type=text][name=nazivDetalji]").val(data.Naziv);
+                $("select[name=tipManfistacije]").val(data.TipManifestacije);
+                $("input[type=text][name=brojMesta]").val(data.BrojMesta);
+                $("input[type=text][name=preostaloKarata]").val(data.PreostaloKarata);
+                $("input[type=text][name=cena]").val(data.Cena);       
+                $("select[name=statusManifestacije]").val(data.Status);
+                $("input[type=text][name=ulica]").val(data.MestoOdrzavanja.Adresa.Ulica);
+                $("input[type=text][name=broj]").val(data.MestoOdrzavanja.Adresa.Broj);
+                $("input[type=text][name=mestoDetalji]").val(data.MestoOdrzavanja.Adresa.Mesto);
+                $("input[type=text][name=postanskiBroj]").val(data.MestoOdrzavanja.Adresa.PostanskiBroj);
+                if (data.ProsecnaOcena == "-1") {
+                    $("input[type=text][name=ocenaManifestacije]").val("Ne postoje ocene");
+                } else {
+                    $("input[type=text][name=ocenaManifestacije]").val(data.ProsecnaOcena);
+                }
+
+                $("input[type=datetime-local][name=datumManifestacije]").val(data.DatumVremeManifestacije.substring(0, data.DatumVremeManifestacije.length - 3));
+                //alert(data.DatumVremeManifestacije.substring(0, data.DatumVremeManifestacije.length - 3));
+
+
+            });
+
+            $("#pregled_rezervacije").click(function () {
+
+
+                var naziv = $("input[type=text][name=nazivDetalji]").val();
+                var preostaloMesta = $("input[type=text][name=preostaloKarata]").val();
+                var cenaRegular = $("input[type=text][name=cenaRegular]").val();
+                var cenaVip = $("input[type=text][name=cenaVip]").val();
+                var cenaFanPit = $("input[type=text][name=cenaFanPit]").val();
+
+
+                var regCena = parseInt(cenaRegular);
+                var vipCena = parseInt(cenaVip);
+                var fanCena = parseInt(cenaFanPit);
+
+                var validacija = true;
+                var poruka = "";
+
+                if (Number.isNaN(regCena)) {
+
+                    poruka += "Morate uneti broj za broj Regular karata!\n";
+                    validacija = false;
+                }
+
+                if (Number.isNaN(vipCena)) {
+
+                    poruka += "Morate uneti broj za broj VIP karata!\n";
+                    validacija = false;
+                }
+
+                if (Number.isNaN(fanCena)) {
+
+                    poruka += "Morate uneti broj za broj FanPit karata!\n";
+                    validacija = false;
+                }
+
+                if (regCena < 0) {
+
+                    poruka += "Morate uneti pozitivan broj za broj Regular karata!\n";
+                    validacija = false;
+                } 
+
+                if (vipCena < 0) {
+
+                    poruka += "Morate uneti pozitivan broj za broj Vip karata!\n";
+                    validacija = false;
+                }
+
+                if (fanCena < 0) {
+
+                    poruka += "Morate uneti pozitivan broj za broj FanPit karata!\n";
+                    validacija = false;
+                }
+
+                var br = regCena + vipCena + fanCena;
+
+                if (br > preostaloMesta) {
+
+                    poruka += "Nije moguce poruciti " + br + " karata.\nPreostalo je: " + preostaloMesta + " karata.\n";
+                    validacija = false;
+                }
+
+                
+
+                if (validacija) {
+
+                    $.ajax({
+                        url: '/kupacPrikaz/vratiUlogovanogKupca',
+                        type: "GET",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",                     
+                        statusCode: {
+                            200: function (data) {
+                               // console.log(data);
+                                //alert(data.TipKorisnika.ImeTipa);
+
+                                
+
+                                if (data.TipKorisnika.ImeTipa == "2") {
+                                   
+                                    imeTipaKorisnika = "BRONZANI";
+                                } else if (data.TipKorisnika.ImeTipa == "1") {
+                                    imeTipaKorisnika = "SREBRNI";
+                                } else {
+                                    imeTipaKorisnika = "ZLATNI";
+                                }
+                                
+                                
+
+                            },
+                            401: function (data) {
+
+                               
+                                alert(data.responseText);
+                                location.href = "Logovanje.html";
+
+
+                            }
+
+                        },
+                        complete: function () {
+
+                            
+                            //alert(cena);
+                           
+                            $("input[type=text][name=brojRegular]").val(cenaRegular);
+                            $("input[type=text][name=brojVip]").val(cenaVip);
+                            $("input[type=text][name=brojFanPit]").val(cenaFanPit);
+
+                            var popust;
+                            //console.log(imeTipaKorisnika);
+                            if (imeTipaKorisnika == "BRONZANI") {
+
+                                popust = "Nema popusta";
+                            } else if (imeTipaKorisnika == "SREBRNI") {
+                                popust = "3%"
+                            } else {
+                                popust = "5%";
+                            }
+
+                            $("input[type=text][name=popust]").val(popust);
+
+                            var suma = 0;
+                            for (i = 0; i < cenaRegular; i++) {
+                                suma += IzracunajCenuKarte(cenaPomocna, imeTipaKorisnika)
+                               
+                            }
+
+                            for (i = 0; i < cenaFanPit; i++) {
+                                suma += IzracunajCenuKarte(cenaPomocna * 2, imeTipaKorisnika)
+                                
+                            }
+
+                            for (i = 0; i < cenaVip; i++) {
+                                suma += IzracunajCenuKarte(cenaPomocna * 4, imeTipaKorisnika);
+                               
+                            }
+
+                            $("input[type=text][name=ukupno]").val(suma + "$");
+
+                            //var bodovi = IzracunajBrojOstvarenihBodova(cenaPomocna, cenaRegular, cenaFanPit, cenaVip);
+
+                            //alert(bodovi);
+                           
+                        }
+                       
+
+                    });
+
+                    
+                   
+                    $("#pregled_rezervacij_ID").css('visibility', 'visible');
+
+                } else {
+
+                    alert(poruka);
+                }
+
+
+              
+
+                
+
+              
+
+            });
+              
+
+            $("#rezervacijaKarata").click(function () {
+
+                var objekat = new Object();
+                objekat.BrojRegular = $("input[type=text][name=brojRegular]").val();
+                objekat.BrojVip = $("input[type=text][name=brojVip]").val();
+                objekat.BrojFanPit = $("input[type=text][name=brojFanPit]").val();
+                //objekat.Ukupno = $("input[type=text][name=ukupno]").val();
+                objekat.Cena = $("input[type=text][name=cena]").val();
+                objekat.OsvojeniBodovi = IzracunajBrojOstvarenihBodova(cenaPomocna, objekat.BrojRegular, objekat.BrojFanPit, objekat.BrojVip);
+                objekat.NazivManifestacije = $("input[type=text][name=nazivDetalji]").val();
+
+                //console.log(objekat);
+
+                $.ajax({
+                    url: '/kupacPrikaz/rezervisiKarte',
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    data: JSON.stringify(objekat),
+                    statusCode: {
+                        200: function (data) {
+
+                            //var text = "Uspesno dodata manifestacija: " + data.Naziv;
+                            alert("Uspesna rezervacija");
+
+                        },
+                        401: function (data) {
+
+                            
+                            alert(data.responseText);
+                            
+
+
+                        }
+
+                    },
+                    complete: function (data) {
+                        // console.log(data);
+                        location.href = "kupacPrikaz.html";
+
+                    }
+
+
+                });
+
+
+            });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        });
+
+
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+
+        function IzracunajCenuKarte(pocetnaCena,imeTipa) {
+
+            
+            if (imeTipa == "BRONZANI") {
+                return pocetnaCena;
+            } else if (imeTipa == "SREBRNI") {
+                return pocetnaCena - (pocetnaCena * 0.03);
+            } else {
+                return pocetnaCena - (pocetnaCena * 0.05);
+            }
+        }
+
+        function IzracunajBrojOstvarenihBodova(cena, brojReg, brojFan, brojVip) {
+
+            var bodovi = 0;
+            for (i = 0; i < brojReg; i++) {
+                bodovi += cena / 1000 * 133;      
+            }
+
+            for (i = 0; i < brojFan; i++) {
+                bodovi += (cena * 2) / 1000 * 133; 
+              
+            }
+
+            for (i = 0; i < brojVip; i++) {
+                bodovi += (cena * 4) / 1000 * 133; 
+                
+            }
+
+            return bodovi;
+
+        }
+
+
+
+
+    </script>
+
+</head>
+<body>
+
+    <div class="menu_div">
+        <div id="manifestacijeKupac" class="menu_izbor" style="float: left"> Manifestacije</div>
+        <div id="pregledKarateKupac" class="menu_izbor" style="float:left">  Moje karte</div>
+        <div id="registracijacijaKupac" class="menu_izbor" style="margin-right: 5px"> Registracija </div>
+        <div id="izlogujKupac" class="menu_izbor"> Izloguj se </div>
+
+    </div>
+
+    <div class="detalji_manifestacije" style="float:left">
+        <div class="dodaj_manifestaciju" style="height: 800px; margin-left:200px; margin-right:0px; float:left; ">
+
+
+            <h3 style="text-align: center;">Detalji manifestacije</h3>
+
+            <div class="labele_div" style="height:700px">
+                <label for="nazivDetalji"> Naziv </label> <br />
+                <label for="tipManifestacije">Tip manifestacije</label>  <br />
+                <label for="brojMesta"> Broj mesta </label>  <br />
+                <label for="preostaloKarata"> Preostalo karata </label>
+                <label style="margin-top:25px" for="cena"> Cena karte </label>  <br />    
+                <label for="statusManifestacije"> Status </label>
+                <label style="margin-top:25px" for="ulica"> Ulica </label>  <br />
+                <label for="broj"> Broj ulice </label>  <br />
+                <label for="mestoDetalji"> Mesto </label>  <br />
+                <label for="postanskiBroj"> Postanski broj </label>  <br />
+                <label for="ocenaManifestacije"> Ocena manifestacije</label>
+                <label style="margin-top:30px" for="datumManifestacije"> Datum manifestacije </label>  <br />
+
+
+
+            </div>
+
+            <div class="inputi_div_dodaj_manifestaciju" style="height:700px;">
+                <input type="text" name="nazivDetalji" readonly /> <br />
+
+                <select class="dodajManifestacijuSelect" id="nacin" name="tipManfistacije" disabled>
+                    <option value="0">KONCERT</option>
+                    <option value="1">FESTIVAL</option>
+                    <option value="2">POZORISTE</option>
+                </select> <br />
+                <input type="text" name="brojMesta" readonly /> <br />
+                <input type="text" name="preostaloKarata" readonly /> <br />
+                <input type="text" name="cena" readonly /> <br />           
+                <select class="dodajManifestacijuSelect" id="nacin" name="statusManifestacije" disabled>
+                    <option value="0">AKTIVNO</option>
+                    <option value="1">NEAKTIVNO</option>
+                </select> <br />
+                <input type="text" name="ulica" readonly /> <br />
+                <input type="text" name="broj" readonly /> <br />
+                <input type="text" name="mestoDetalji" readonly /> <br />
+                <input type="text" name="postanskiBroj" readonly /> <br />
+                <input type="text" name="ocenaManifestacije" readonly /> <br />
+                <input style="width: 180px; " type="datetime-local" name="datumManifestacije" readonly /> <br />
+
+
+
+
+            </div>
+
+        </div>
+        </div>
+
+
+
+        
+        <div class="rezervacija_karte" style="margin-bottom:25px">
+            <h3 style="text-align: center">Rezervisite karte za manifestaciju</h3>
+            <label class="rezervacija_pomoc" for="cenaRegular">Broj Regular karata</label> <input class="rezervacija_pomoc" style="margin-left:25px;" type="text" name="cenaRegular" /> <br />
+            <label class="rezervacija_pomoc" for="cenaVip">Broj Vip karata</label> <input class="rezervacija_pomoc" style="margin-left:53px;" type="text" name="cenaVip" /> <br />
+            <label class="rezervacija_pomoc" for="cenaFanPit">Broj FanPit karata</label> <input class="rezervacija_pomoc" style="margin-left:35px;"type="text" name="cenaFanPit" /> <br />
+            <button id="pregled_rezervacije" style="margin-left:150px; margin-top:30px">Pregled rezervacije</button>
+        </div>
+
+        <div class="pregled_rezervacije" id="pregled_rezervacij_ID" style="visibility: hidden;">
+            <h3 style="text-align: center">Rezervisite karte za manifestaciju</h3>
+            <label class="rezervacija_pomoc" for="brojRegular">Broj Regular karata</label> <input class="rezervacija_pomoc" style="margin-left:25px;" type="text" name="brojRegular" /> <br />
+            <label class="rezervacija_pomoc" for="brojVip">Broj Vip karata</label> <input class="rezervacija_pomoc" style="margin-left:53px;" type="text" name="brojVip" /> <br />
+            <label class="rezervacija_pomoc" for="brojFanPit">Broj FanPit karata</label> <input class="rezervacija_pomoc" style="margin-left:35px;" type="text" name="brojFanPit" /> <br />
+            <label class="rezervacija_pomoc" for="popust">Popust</label> <input class="rezervacija_pomoc" style="margin-left:108px;" type="text" name="popust" /> <br />
+            <label class="rezervacija_pomoc" for="ukupno">Ukupno</label> <input class="rezervacija_pomoc" style="margin-left:100px;" type="text" name="ukupno" /> <br />
+            <button id="rezervacijaKarata" style="margin-left:150px; margin-top:30px"> Rezervisi </button>
+        </div>
+
+        <footer>Nikola Mijoni&#263; PR49/2017</footer>
+
+</body>
+</html>

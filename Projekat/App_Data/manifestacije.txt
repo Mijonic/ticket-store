@@ -1,0 +1,7 @@
+EXIT|FESTIVAL|5200|19-09-2020 02:58:00|50|AKTIVNO|Petrovaradinska|1|Petrovaradin|21000|C:\fakepath\EXIT.jpg|4.5|5200|perapera|False
+Izdaja|POZORISTE|50|28-10-2020 03:33:00|5|AKTIVNO|Bodana Suputa|5|Novi Sad|21000|C:\fakepath\ajnstajnova-izdaja-predstava.jpg|-1|50|perapera|False
+Summer|FESTIVAL|120|10-07-2021 09:40:00|12|AKTIVNO|Sunčcani kej bb|1|Novi Sad|21000|C:\fakepath\Summer-festival.jpg|-1|111|zikazika|False
+Zdravko Colic|KONCERT|500|28-09-2020 03:37:00|8|AKTIVNO|Arsenija Čarnojevica|58|Beograd|11070|C:\fakepath\cola-koncert.jpg|-1|500|zikazika|False
+Nisville|FESTIVAL|220|24-12-2020 03:40:00|17|NEAKTIVNO|Cara Lazara|15|Novi Sad|21000|C:\fakepath\Nisville-festivala.jpg|-1|220|zikazika|False
+Parni valjak|KONCERT|40|09-10-2020 04:35:00|3|AKTIVNO|Ćirpanova|1|Novi Sad|21000|C:\fakepath\parniValjak-koncert.jpg|-1|37|perapera|False
+Manifestacija|POZORISTE|11|30-09-2020 07:26:00|5|AKTIVNO|Suboticka|1|Novi Sad|2100|C:\fakepath\nekifestival.jpg|-1|6|perapera|False

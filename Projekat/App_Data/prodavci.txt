@@ -1,0 +1,3 @@
+perapera|123123|Petar|Petrovic|MUSKI|12-10-2003 02:45:00|PRODAVAC|False
+zikazika|zikazika|Zika|Zivkovic|MUSKI|20-03-2020 02:54:00|PRODAVAC|False
+prodavac|prodavac|prodavac|prodavacic|ZENSKI|01-07-1998 10:15:00|PRODAVAC|True

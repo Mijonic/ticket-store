@@ -1,0 +1,2212 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="../Content/Site.css" />
+    <meta charset="utf-8" />
+    <script src="../Scripts/jquery-3.3.1.min.js"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+          integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+          crossorigin="" />
+
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin=""></script>
+
+    <title>Prodavac prikaz</title>
+
+
+    <script type="text/javascript">
+        var prikazaneManifestacije = new Array();
+        var prikazaneKarte = new Array();
+        var prikazaniKorisnici = new Array();
+        var koordinate = new Object();
+        $(document).ready(function () {
+
+            $.ajax({
+                url: '/prodavacPrikaz/vratiUlogovanogProdavca',
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                statusCode: {
+
+                    401: function (data) {
+
+                        //console.log(data);
+                        alert("Morate biti ulogovani kao prodavac!");
+                        //alert(data.responseText);
+                        //history.go(-1);
+                        $.ajax({
+                            url: '/index/vratiUlogovanogKorisnika',
+                            type: "GET",
+                            contentType: "application/json; charset=utf-8",
+                            dataType: "json",
+                            statusCode: {
+
+                                200: function (data) {
+
+                                    
+
+                                    if (data.Uloga == "0") {
+
+                                        location.href = "adminPrikaz.html";
+
+                                    } else if (data.Uloga == "1") {
+
+                                        location.href = "prodavacPrikaz.html";
+
+                                    } else {
+
+                                        location.href = "kupacPrikaz.html";
+                                    }
+
+
+
+
+
+                                },
+                                401: function (data) {
+
+                                    location.href = "index.html";
+                                }
+
+                            }
+
+
+                        });
+
+                      
+
+                    }
+
+                }
+
+
+            });
+
+            $("#prikaz").css('height', '');
+            PrikaziOpcijeManifestacije();
+            NemojPrikazatiOpcijeKarte();
+            $("#mapid").hide();
+         
+
+            $.get("/index/vratiManifestacije", function (data, status) {
+                $("#prikaz").css('height', '');
+                PrikaziManifestacije(data);
+                $("#mapid").hide();
+            });
+
+            $("#izlogujProdavac").click(function () {
+                $("#mapid").hide();
+                $("#prikaz").css('height', '');
+                $.get("/index/izlogujSe", function (data, status) {
+
+
+                    location.href = "Logovanje.html";
+                });
+
+            });
+
+
+            $("#dodajManifestaciju").click(function () {
+                NemojPrikazatiOpcijeKarte();
+                NemojPrikazatiOpcijeManifestacije();
+                $("#prikaz").css("height", "720px");
+                PrikaziDodajView();
+                $("#mapid").show();
+            });
+
+            $("#registracijaProdavac").click(function () {
+                $("#prikaz").css('height', '');
+                NemojPrikazatiOpcijeManifestacije();
+                NemojPrikazatiOpcijeKarte();
+                $("#mapid").hide();
+                location.href = "Registracija.html";
+            });
+
+            $("#kupciKarata").click(function () {
+                $("#prikaz").css('height', '');
+                NemojPrikazatiOpcijeKarte();
+                NemojPrikazatiOpcijeManifestacije();
+                $("#mapid").hide();
+
+
+                $.get("/prodavacPrikaz/vratiKupceKarata", function (data, status) {
+                    PrikaziKorisnike(data, false);
+                });
+
+
+            });
+
+
+            $("#mojeManifestacije").click(function () {
+                $("#prikaz").css('height', '');
+                PrikaziOpcijeManifestacije();
+                NemojPrikazatiOpcijeKarte();
+                $("#mapid").hide();
+
+                $.get("/prodavacPrikaz/vratiManifestacijeProdavca", function (data, status) {
+                    PrikaziManifestacije(data, false);
+                });
+
+            });
+
+            /*
+            $("#izmenaManifestacijeProdavca").click(function () {
+
+                // izmena view
+                alert("Izmeni jee");
+            });
+
+            */
+
+            $("#rezervisaneKarte").click(function () {
+                $("#prikaz").css('height', '');
+                PrikaziKarteOpcije();
+                NemojPrikazatiOpcijeManifestacije();
+                $("#mapid").hide();
+
+                $.get("/prodavacPrikaz/vratiRezervisaneKarteMojihManifestacija", function (data, status) {
+                    PrikaziKarte(data);
+                });
+
+            });
+
+
+            $("#prikazManifestacijaSvih").click(function () {
+               
+                NemojPrikazatiOpcijeKarte();
+                PrikaziOpcijeManifestacije();
+                $("#prikaz").css('height', '');
+                $("#mapid").hide();
+                $.get("/index/vratiManifestacije", function (data, status) {
+                    PrikaziManifestacije(data);
+                });
+            });
+
+            $("#pretraziManifestaciju").click(function () {
+                
+                var objekat = new Object();
+                objekat.Naziv = $("input[type=text][name=naziv]").val().toLowerCase();
+                objekat.MestoOdrzavanja = $("input[type=text][name=mesto]").val().toLowerCase();
+                objekat.Datum_od = $("input[type=date][name=datum_od]").val().toLowerCase();
+                objekat.Datum_do = $("input[type=date][name=datum_do]").val().toLowerCase();
+                objekat.Lokacija = $("input[type=text][name=lokacija]").val().toLowerCase();
+                objekat.Cena_od = $("input[type=text][name=cena_od]").val().toLowerCase();
+                objekat.Cena_do = $("input[type=text][name=cena_do]").val().toLowerCase();
+
+
+                //console.log(objekat.Datum_od);
+
+                if (objekat.Datum_od == "") {
+                    objekat.Datum_od = new Date(-8640000000000000);
+                } else {
+                    objekat.Datum_od = new Date(objekat.Datum_od);
+                }
+
+                if (objekat.Datum_do == "") {
+                    objekat.Datum_do = new Date(86400000000);
+                } else {
+                    objekat.Datum_do = new Date(objekat.Datum_do);
+                }
+
+
+                // console.log(objekat.Datum_od);
+                //console.log(objekat.Datum_do);
+
+
+
+                if (objekat.Datum_od > objekat.Datum_do) {
+                    alert("Datum pocetka manifestacije mora biti pre datuma kraja manifestacije!");
+                    return;
+                }
+
+
+
+                var cenaOD = parseInt(objekat.Cena_od);
+                var cenaDO = parseInt(objekat.Cena_do);
+
+                if (Number.isNaN(cenaOD)) {
+                    cenaOD = 0;
+                    objekat.Cena_od = 0;
+                }
+
+                if (Number.isNaN(cenaDO)) {
+                    cenaDO = 90071992547;
+                    objekat.Cena_do = 90071992547;
+                }
+
+
+                // console.log(cenaOD);
+                //console.log(cenaDO);
+
+                if (cenaOD < 0 || cenaDO < 0) {
+                    alert("Cene moraju biti pozitivne vrednosti!");
+                    return;
+                }
+
+                if (cenaOD > cenaDO) {
+                    alert("Cena od mora biti veca od Cene do!");
+                    return;
+                }
+
+
+
+
+
+
+                $.ajax({
+                    url: '/index/pretraziManifestacije',
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    data: JSON.stringify(objekat),
+                    success: function (data) {
+                        // console.log(data);
+                        $("input[type=text][name=naziv]").val("");
+                        $("input[type=text][name=mesto]").val("");
+                        $("input[type=date][name=datum_od]").val("");
+                        $("input[type=date][name=datum_do]").val("");
+                        $("input[type=text][name=lokacija]").val("");
+                        $("input[type=text][name=cena_od]").val("");
+                        $("input[type=text][name=cena_do]").val("");
+                        PrikaziManifestacije(data);
+
+
+
+                    },
+                    error: function (data) {
+                        // console.log(data);
+                    }
+                });
+
+
+
+
+
+
+
+            });
+
+            $("#sortiranje").click(function () {
+
+                var poCemu = $("input[name='nacin']:checked").val();
+                var kako = $("input[name='sort']:checked").val();
+
+
+
+                if (kako === "rastuce") {
+
+                    if (poCemu === "naziv") {
+
+
+                        prikazaneManifestacije.sort(sort_by('Naziv', false, (x) => x.toLowerCase()));
+                        PrikaziManifestacije(prikazaneManifestacije);
+
+                    } else if (poCemu === "cena") {
+
+                        prikazaneManifestacije.sort(sort_by('Cena', false, parseInt));
+                        PrikaziManifestacije(prikazaneManifestacije);
+
+                    } else if (poCemu === "mesto") {
+
+                        //console.log(prikazaneManifestacije);
+
+                        /*
+                        prikazaneManifestacije.sort((a, b) => a.MestoOdrzavanja.Adresa.Mesto > b.MestoOdrzavanja.Adresa.Mesto);
+
+
+                        */
+
+                        prikazaneManifestacije.sort(function (a, b) {
+                            if (a.MestoOdrzavanja.Adresa.Mesto < b.MestoOdrzavanja.Adresa.Mesto) { return -1; }
+                            if (a.MestoOdrzavanja.Adresa.Mesto > b.MestoOdrzavanja.Adresa.Mesto) { return 1; }
+                            return 0;
+                        });
+                        PrikaziManifestacije(prikazaneManifestacije);
+
+                    } else {
+
+                        prikazaneManifestacije.sort((a, b) => new Date(a.DatumVremeManifestacije) - new Date(b.DatumVremeManifestacije));
+                        PrikaziManifestacije(prikazaneManifestacije);
+                    }
+
+                } else {
+
+                    if (poCemu === "naziv") {
+
+
+                        prikazaneManifestacije.sort(sort_by('Naziv', true, (x) => x.toLowerCase()));
+                        PrikaziManifestacije(prikazaneManifestacije);
+
+                    } else if (poCemu === "cena") {
+
+                        prikazaneManifestacije.sort(sort_by('Cena', true, parseInt));
+                        PrikaziManifestacije(prikazaneManifestacije);
+                    } else if (poCemu === "mesto") {
+
+
+                        prikazaneManifestacije.sort(function (a, b) {
+                            if (a.MestoOdrzavanja.Adresa.Mesto < b.MestoOdrzavanja.Adresa.Mesto) { return -1; }
+                            if (a.MestoOdrzavanja.Adresa.Mesto > b.MestoOdrzavanja.Adresa.Mesto) { return 1; }
+                            return 0;
+                        });
+                        /*
+                        prikazaneManifestacije.sort((a, b) => a.MestoOdrzavanja.Adresa.Mesto > b.MestoOdrzavanja.Adresa.Mesto);
+                        console.log(prikazaneManifestacije);*/
+                        prikazaneManifestacije.reverse();
+                        PrikaziManifestacije(prikazaneManifestacije);
+                    } else {
+                        prikazaneManifestacije.sort((a, b) => new Date(b.DatumVremeManifestacije) - new Date(a.DatumVremeManifestacije));
+                        PrikaziManifestacije(prikazaneManifestacije);
+                    }
+
+                }
+
+
+            });
+
+
+            $("#filter").click(function () {
+
+
+                /*○ Tip manifestacije
+                ○ Prikaz nerasprodatih manifestacija.*/
+
+                var nacinFiltriranja = $('#nacin').val();
+                //console.log(nacinFiltriranja);
+
+                if (nacinFiltriranja == "0") {
+
+                    prikazaneManifestacije = prikazaneManifestacije.filter(function (manifestacija) {
+
+                        return manifestacija.TipManifestacije == 0;
+
+                    });
+
+
+
+
+                } else if (nacinFiltriranja == "1") {
+
+                    prikazaneManifestacije = prikazaneManifestacije.filter(function (manifestacija) {
+
+                        return manifestacija.TipManifestacije == 1;
+
+                    });
+
+
+                } else {
+
+                    prikazaneManifestacije = prikazaneManifestacije.filter(function (manifestacija) {
+
+                        return manifestacija.TipManifestacije == 2;
+
+                    });
+
+
+                }
+
+
+               
+                var dodatniUslov = $('input[name="nerasprodate"]:checked').val();
+                if (dodatniUslov == "on") {
+
+
+                    prikazaneManifestacije = prikazaneManifestacije.filter(function (manifestacija) {
+
+                        return manifestacija.PreostaloKarata > 0;
+
+                    });
+
+
+
+                }
+
+                PrikaziManifestacije(prikazaneManifestacije);
+
+
+
+
+            });
+
+
+            $("#mojProfilProdavac").click(function () {
+                $("#mapid").hide();
+                NemojPrikazatiOpcijeKarte();
+                NemojPrikazatiOpcijeKarte();
+
+                $.get("/index/vratiUlogovanogKorisnika", function (data) {
+                    //console.log(data);
+                    PrikaziPregledProfila(data);
+                });
+
+            });
+
+
+
+
+
+           
+            $("#pretraziKarte").click(function () {
+
+                var objekat = new Object();
+                objekat.Naziv = $("input[type=text][name=nazivManifestacije]").val().toLowerCase();
+                objekat.Datum_od = $("input[type=date][name=datumOD]").val().toLowerCase();
+                objekat.Datum_do = $("input[type=date][name=datumDO]").val().toLowerCase();
+                objekat.Cena_od = $("input[type=text][name=cenaKarteOD]").val().toLowerCase();
+                objekat.Cena_do = $("input[type=text][name=cenaKarteDo]").val().toLowerCase();
+
+
+                //console.log(objekat);
+
+
+                if (objekat.Datum_od == "") {
+                    objekat.Datum_od = new Date(-8640000000000000);
+                } else {
+                    objekat.Datum_od = new Date(objekat.Datum_od);
+                }
+
+                if (objekat.Datum_do == "") {
+                    objekat.Datum_do = new Date(86400000000);
+                } else {
+                    objekat.Datum_do = new Date(objekat.Datum_do);
+                }
+
+
+
+
+                if (objekat.Datum_od > objekat.Datum_do) {
+                    alert("Datum pocetka manifestacije mora biti pre datuma kraja manifestacije!");
+                    return;
+                }
+
+
+
+                var cenaOD = parseInt(objekat.Cena_od);
+                var cenaDO = parseInt(objekat.Cena_do);
+
+                if (Number.isNaN(cenaOD)) {
+                    cenaOD = 0;
+                    objekat.Cena_od = 0;
+                }
+
+                if (Number.isNaN(cenaDO)) {
+                    cenaDO = 90071992547;
+                    objekat.Cena_do = 90071992547;
+                }
+
+
+
+                if (cenaOD < 0 || cenaDO < 0) {
+                    alert("Cene moraju biti pozitivne vrednosti!");
+                    return;
+                }
+
+                if (cenaOD > cenaDO) {
+                    alert("Cena od mora biti veca od Cene do!");
+                    return;
+                }
+
+                $.ajax({
+                    url: '/prodavacPrikaz/pretraziKarteProdavac',
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    data: JSON.stringify(objekat),
+                    success: function (data) {
+                        // console.log(data);
+                        objekat.Naziv = $("input[type=text][name=nazivManifestacije]").val("");
+                        objekat.Datum_od = $("input[type=date][name=datumOD]").val("");
+                        objekat.Datum_do = $("input[type=date][name=datumDO]").val("");
+                        objekat.Cena_od = $("input[type=text][name=cenaKarteOD]").val("");
+                        objekat.Cena_do = $("input[type=text][name=cenaKarteDo]").val("");
+                        PrikaziKarte(data);
+
+
+
+                    },
+                    error: function (data) {
+                        console.log(data);
+                    }
+                });
+
+
+
+
+
+            });
+
+
+            $("#sortiranjeKarata").click(function () {
+
+
+
+                var poCemu = $("input[name='nacinKarte']:checked").val();
+                var kako = $("input[name='sortKarte']:checked").val();
+
+
+
+                if (kako === "rastuce") {
+
+                    if (poCemu === "naziv") {
+
+
+                        prikazaneKarte.sort(sort_by('NazivManifestacije', false, (x) => x.toLowerCase()));
+                        PrikaziKarte(prikazaneKarte);
+
+                    } else if (poCemu === "cena") {
+
+                        prikazaneKarte.sort(sort_by('Cena', false, parseFloat));
+                        PrikaziKarte(prikazaneKarte);
+
+
+                    } else {
+
+                        prikazaneKarte.sort((a, b) => new Date(a.DatumVremeManifestacije) - new Date(b.DatumVremeManifestacije));
+                        PrikaziKarte(prikazaneKarte);
+                    }
+
+                } else {
+
+                    if (poCemu === "naziv") {
+
+
+                        prikazaneKarte.sort(sort_by('NazivManifestacije', true, (x) => x.toLowerCase()));
+                        PrikaziKarte(prikazaneKarte);
+
+                    } else if (poCemu === "cena") {
+
+                        prikazaneKarte.sort(sort_by('Cena', true, parseInt));
+                        PrikaziKarte(prikazaneKarte);
+
+                    } else {
+                        prikazaneKarte.sort((a, b) => new Date(b.DatumVremeManifestacije) - new Date(a.DatumVremeManifestacije));
+                        PrikaziKarte(prikazaneKarte);
+                    }
+
+                }
+
+            });
+
+            $("#filterKarte").click(function () {
+
+
+
+
+                var nacinFiltriranja = $('#tipKarte').val();
+
+
+                if (nacinFiltriranja == "0") {
+
+                    prikazaneKarte = prikazaneKarte.filter(function (karta) {
+
+                        return karta.TipKarte == 0;
+
+                    });
+
+
+
+
+                } else if (nacinFiltriranja == "1") {
+
+                    prikazaneKarte = prikazaneKarte.filter(function (karta) {
+
+                        return karta.TipKarte == 1;
+
+                    });
+
+
+                } else {
+
+                    prikazaneKarte = prikazaneKarte.filter(function (karta) {
+
+                        return karta.TipKarte == 2;
+
+                    });
+
+
+                }
+
+
+                var nacinPomocni = $('#statusKarte').val();
+
+
+                if (nacinPomocni == "0") {
+
+                    prikazaneKarte = prikazaneKarte.filter(function (karta) {
+
+                        return karta.StatusKarte == 0;
+
+                    });
+
+
+
+
+                } else if (nacinPomocni == "1") {
+
+                    prikazaneKarte = prikazaneKarte.filter(function (karta) {
+
+                        return karta.StatusKarte == 1;
+
+                    });
+
+
+                }
+
+
+
+
+
+
+                PrikaziKarte(prikazaneKarte);
+
+
+            });
+
+
+
+
+
+
+
+        });
+
+        const sort_by = (field, reverse, primer) => {
+
+            const key = primer ?
+                function (x) {
+                    return primer(x[field])
+                } :
+                function (x) {
+                    return x[field]
+                };
+
+            reverse = !reverse ? 1 : -1;
+
+            return function (a, b) {
+                return a = key(a), b = key(b), reverse * ((a > b) - (b > a));
+            }
+        }
+
+
+        function DodajManifestaciju() {
+
+            var objekat = new Object();
+            objekat.Naziv = $("input[type=text][name=nazivDodaj]").val();
+
+            
+            objekat.TipManifestacije = $("#tipManifestacije").val();
+
+            console.log(objekat.TipManifestacije);
+            objekat.BrojMesta = $("input[type=text][name=brojMesta]").val();
+            objekat.DatumManifestacije = $("input[type=datetime-local][name=datumManifestacije]").val();
+            objekat.Cena = $("input[type=text][name=cena]").val();
+
+            objekat.Ulica = $("input[type=text][name=ulica]").val();
+            objekat.Broj = $("input[type=text][name=broj]").val();
+            objekat.Mesto = $("input[type=text][name=mestoDodaj]").val();
+            objekat.PostanskiBroj = $("input[type=text][name=postanskiBroj]").val();
+            objekat.Poster = $("input[type=file][name=slika]").val();
+
+            //console.log(objekat);
+
+            //var retrievedObject = localStorage.getItem('testObject');
+
+           // console.log('retrievedObject: ', JSON.parse(retrievedObject));
+
+           // console.log(koordinate);
+
+            var validacijaObavestenje = "";
+            var validacijUspesna = true;
+
+            if (objekat.Naziv.trim() == "") {
+                validacijaObavestenje += "Morate uneti naziv manifestacije!\n";
+                validacijUspesna = false;
+            }
+
+            if (Number.isNaN(parseInt(objekat.BrojMesta))) {
+                validacijaObavestenje += "Broj mesta mora biti broj!\n";
+                validacijUspesna = false;
+            }
+
+            if (parseInt(objekat.BrojMesta) < 0) {
+                validacijaObavestenje += "Broj mesta mora biti pozitivan broj!\n";
+                validacijUspesna = false;
+
+            }
+
+            if (objekat.DatumManifestacije.trim() == "") {
+                validacijaObavestenje += "Morate izabrati datum!\n";
+                validacijUspesna = false;
+            }
+
+            //objekat.DatumManifestacije = new Date(objekat.DatumManifestacije);
+
+
+            //console.log( new Date(Date.now()));
+
+
+            if (new Date(objekat.DatumManifestacije) < new Date(Date.now())) {
+                //console.log("Datum manifestacije mora biti u buducem vremenu!");
+                validacijaObavestenje += "Datum manifestacije mora biti u buducem vremenu!\n";
+                validacijUspesna = false;
+
+            }
+
+
+
+
+            if (Number.isNaN(parseInt(objekat.Cena))) {
+                validacijaObavestenje += "Cena Regular mora biti broj!\n";
+                validacijUspesna = false;
+            }
+
+            if (parseInt(objekat.Cena) < 0) {
+                validacijaObavestenje += "Cena Regular karte mora biti pozitivan broj!\n";
+                validacijUspesna = false;
+
+            }
+
+
+
+            if (objekat.Ulica.trim() == "") {
+                validacijaObavestenje += "Morate uneti ulicu manifestacije!\n";
+                validacijUspesna = false;
+            }
+
+            if (Number.isNaN(parseInt(objekat.Broj))) {
+                validacijaObavestenje += "Broj ulice mora biti broj!\n";
+                validacijUspesna = false;
+            }
+
+            if (parseInt(objekat.Broj) <= 0) {
+                validacijaObavestenje += "Broj ulice mora biti pozitivan prirodan broj!\n";
+                validacijUspesna = false;
+
+            }
+
+            if (objekat.Mesto.trim() == "") {
+                validacijaObavestenje += "Morate uneti mesto(grad/drzava) manifestacije!\n";
+                validacijUspesna = false;
+            }
+
+            if (Number.isNaN(parseInt(objekat.PostanskiBroj))) {
+                validacijaObavestenje += "Postanski broj mora biti broj!\n";
+                validacijUspesna = false;
+            }
+
+            if (parseInt(objekat.PostanskiBroj) <= 0) {
+                validacijaObavestenje += "Postanski broj mora biti pozitivan prirodan broj!\n";
+                validacijUspesna = false;
+
+            }
+
+            if (objekat.Poster.trim() == "") {
+                validacijaObavestenje += "Izaberite sliku!\n";
+                validacijUspesna = false;
+            }
+
+
+
+            if (validacijUspesna) {
+
+                $.ajax({
+                    url: '/prodavacPrikaz/dodajManifestaciju',
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    data: JSON.stringify(objekat),
+                    statusCode: {
+                        200: function (data) {
+
+                            var text = "Uspesno dodata manifestacija: " + data.Naziv;
+                            alert(text);
+
+                        },
+                        401: function (data) {
+
+                            alert(data.responseText);
+                        },
+                        403: function (data) {
+
+                            alert(data.responseText);
+
+
+                        }
+
+
+
+                    },
+                    success: function (data) {
+                        // console.log(data);
+                        //location.reload();
+                        location.href = "prodavacPrikaz.html";
+
+
+
+
+                    }
+
+
+
+
+                });
+            } else {
+                alert(validacijaObavestenje);
+            }
+
+
+
+        }
+
+        function PrikaziManifestacije(data, link = true) {
+
+            var sveManifestacije = "";
+
+            sveManifestacije += `<div id ="prikaz_manifestacija" class="prikaz_manifestacija">`;
+
+            prikazaneManifestacije = data;
+            // console.log(prikazaneManifestacije);
+
+            $.each(data, function (key, value) {
+
+                var naziv = value.Naziv;
+                if (link) {
+                    //sveManifestacije += `<a href="manifestacijaDetalji.html?naziv=` + naziv + `">`;
+                    sveManifestacije += `<a href="manifestacijaDetalji.html?naziv=` + naziv + `?tipKorisnika=PRODAVAC">`;
+                }
+                //sveManifestacije += `<a href="manifestacijaDetalji.html?naziv=` + naziv + `">`;
+                sveManifestacije += `<div class = "pojedinacna_manifestacija">`;
+
+                var tipPomocna = value.TipManifestacije;
+                var tipManifestacije = "";
+
+                if (tipPomocna == 0) {
+                    tipManifestacije = "KONCERT"
+                } else if (tipPomocna == 1) {
+                    tipManifestacije = "FESTIVAL";
+                } else if (tipPomocna == 2) {
+                    tipManifestacije = "POZORISTE";
+                } else {
+                    tipManifestacije = "NEPOZNAT TIP";
+                }
+
+                // console.log(tipManifestacije);
+
+                var brojMesta = value.BrojMesta;
+                var pomocnaZaVreme = value.DatumVremeManifestacije;
+                var tacnoVreme = new Date(pomocnaZaVreme);
+
+
+                var mesec = tacnoVreme.getMonth() + 1;
+                var dan = tacnoVreme.getDate();
+                var godina = tacnoVreme.getFullYear();
+
+                var sat = tacnoVreme.getHours();
+                var minuti = tacnoVreme.getMinutes();
+
+                var datum = dan + "/" + mesec + "/" + godina;
+                if (parseInt(minuti) < 10)
+                    minuti = "0" + minuti;
+                if (parseInt(sat) < 10)
+                    sat = "0" + sat;
+                var vreme = sat + ":" + minuti;
+
+                console.log(vreme);
+
+
+
+                var ulica = value.MestoOdrzavanja.Adresa.Ulica;
+                var broj = value.MestoOdrzavanja.Adresa.Broj;
+                var mesto = value.MestoOdrzavanja.Adresa.Mesto;
+                var postanskiBroj = value.MestoOdrzavanja.Adresa.PostanskiBroj;
+
+
+
+                //adresa = ulica + " " + broj + ", " + mesto + " " + postanskiBroj;
+                var adresa = ulica + " " + broj + ", " + mesto
+
+                var poster = value.PosterManifestacije;
+                var cena = value.Cena;
+                var prosecnaOcena = value.ProsecnaOcena;
+
+
+
+                sveManifestacije += ` <div class="elementi_manifestacije" style="font-size:18px">` + naziv + " " + tipManifestacije + `</div>`;
+                sveManifestacije += `<div class ="elementi_manifestacije">` + "Datum: " + datum + ", Pocetak: " + vreme + '</div>';
+                sveManifestacije += `<div class ="elementi_manifestacije">` + adresa + '</div>';
+                sveManifestacije += `<div class ="cena_manifestacija">` + cena + "$" + '</div>';
+
+                //sveManifestacije += `<img src="../Slike/nekifestival.jpg" class = "slika_manifestacija">`;
+                sveManifestacije += `<img src="../Slike/` + poster.slice(11, poster.length) + `" class = "slika_manifestacija">`;
+
+
+
+
+
+                if (tacnoVreme <= Date.now()) {
+
+                    if (prosecnaOcena == "-1") {
+                        sveManifestacije += `<div class ="elementi_manifestacije">` + "Neocenjena" + '</div>';
+                    } else {
+                        sveManifestacije += `<div class ="elementi_manifestacije">` + prosecnaOcena + " &#9734;" + '</div>';
+                    }
+                    // sveManifestacije += `<div class ="elementi_manifestacije">` + prosecnaOcena + " &#9734;" + '</div>';
+                } else {
+
+                    if (!link) {
+                        sveManifestacije += `<button id="` + value.Naziv + `" style="margin-left: 100px">Izmeni</button>`;
+                        $(document).on("click", "#" + value.Naziv, function () {
+
+                            
+
+                            IzmeniManifestaciju(value.Naziv);
+
+
+                        });
+
+                    }
+
+                }
+
+
+
+
+                if (link) {
+                    sveManifestacije += `</div></a>`;
+                } else {
+                    sveManifestacije += `</div>`;
+                }
+
+            });
+            sveManifestacije += `</div>`;
+            $("#prikaz").html(sveManifestacije);
+
+
+
+
+        }
+
+        function PrikaziKarte(data) {
+
+            var sveKarte = "";
+
+            prikazaneKarte = data;
+            console.log(prikazaneKarte);
+
+            sveKarte += `<div id ="prikaz_manifestacija" class="prikaz_manifestacija">`;
+
+
+            $.each(data, function (key, value) {
+
+                var username = value.UsernameKupca;
+
+
+                sveKarte += `<div  class = "pojedinacna_manifestacija" style="width:300px; height:260px; margin-left:65px;">`;
+
+                var id = value.Id;
+                var cena = value.Cena;
+
+
+                var status = value.StatusKarte;
+                var statusKarte = "";
+
+                if (status == 0) {
+                    statusKarte = "REZERVISANA"
+                } else if (status == 1) {
+                    statusKarte = "ODUSTANAK";
+                }
+
+                var tip = value.TipKarte;
+                var tipKarte = "";
+
+                if (tip == 0) {
+                    tipKarte = "VIP"
+                } else if (tip == 1) {
+                    tipKarte = "REGULAR";
+                } else {
+                    tipKarte = "FAN PIT";
+                }
+
+                var nazivManifestacije = value.NazivManifestacije;
+
+
+
+                var pomocnaZaVreme = value.DatumVremeManifestacije;
+                var tacnoVreme = new Date(pomocnaZaVreme);
+
+
+                var mesec = tacnoVreme.getMonth() + 1;
+                var dan = tacnoVreme.getDate();
+                var godina = tacnoVreme.getFullYear();
+
+                var sat = tacnoVreme.getHours();
+                var minuti = tacnoVreme.getMinutes();
+
+
+
+                var datum = dan + "/" + mesec + "/" + godina;
+                if (parseInt(minuti) < 10)
+                    minuti = "0" + minuti;
+                if (parseInt(sat) < 10)
+                    sat = "0" + sat;
+                var vreme = sat + ":" + minuti;
+
+                var imeKupca = value.ImeKupca;
+                var prezimeKupca = value.PrezimeKupca;
+
+
+                //aa/
+                var pomocnaZaVreme1 = value.DatumOtkazivanja;
+                var tacnoVreme1 = new Date(pomocnaZaVreme1);
+
+
+                var mesec1 = tacnoVreme1.getMonth() + 1;
+                var dan1 = tacnoVreme1.getDate();
+                var godina1 = tacnoVreme1.getFullYear();
+
+                var sat1 = tacnoVreme1.getHours();
+                var minuti1 = tacnoVreme1.getMinutes();
+
+
+
+                var datum1 = dan1 + "/" + mesec1 + "/" + godina1;
+                if (parseInt(minuti1) < 10)
+                    minuti1 = "0" + minuti1;
+                if (parseInt(sat1) < 10)
+                    sat1 = "0" + sat1;
+                var vreme1 = sat1 + ":" + minuti1;
+
+                //aa
+
+
+
+
+
+                sveKarte += ` <div class="elementi_manifestacije" style="font-size:18px">` + value.Id + `</div>`;
+                sveKarte += ` <div class="elementi_manifestacije" style="font-size:18px">` + nazivManifestacije + `</div>`;
+                sveKarte += ` <div class="cena_manifestacija">` + cena + "$" + `</div>`;
+                sveKarte += ` <div class="elementi_manifestacije" style="font-size:18px">` + imeKupca + " " + prezimeKupca + `</div>`;
+                sveKarte += ` <div class="elementi_manifestacije" style="font-size:18px">` + statusKarte + `</div>`;
+                sveKarte += ` <div class="elementi_manifestacije" style="font-size:18px">` + tipKarte + `</div>`;
+                sveKarte += `<div class ="elementi_manifestacije">` + "Datum: " + datum + ", Pocetak: " + vreme + `</div>`;
+
+
+
+
+
+                if (statusKarte == "ODUSTANAK") {
+
+                    sveKarte += `<div class ="elementi_manifestacije">` + "Datum otkazivanja: " + datum1 + ", " + vreme1 + `</div>`;
+
+                }
+
+                sveKarte += `</div>`;
+
+
+            });
+
+
+            sveKarte += `</div>`;
+
+
+            $("#prikaz").html(sveKarte);
+
+        }
+
+        function PrikaziKorisnike(data, blokiranje = false) {
+            var sviKorisnici = "";
+
+            prikazaniKorisnici = data;
+            console.log(prikazaniKorisnici);
+
+            sviKorisnici += `<div id ="prikaz_korisnika" class="prikaz_manifestacija" >`;
+
+
+            //prikaz kupaca
+            sviKorisnici += `<hr style="height: 5px; width:100%;">`;
+
+
+
+            sviKorisnici += `<h2 style="text-align: center;  color:white;">Prikaz kupaca</h2>`;
+
+            $.each(data, function (key, value) {
+
+                var objekat = new Object();
+
+                objekat.Username = value.Username;
+                objekat.Password = value.Password;
+                objekat.Ime = value.Ime;
+                objekat.Prezime = value.Prezime;
+                objekat.Pol = value.Pol;
+                objekat.DatumRodjenja = value.DatumRodjenja;
+                objekat.Uloga = value.Uloga;
+                objekat.LogickiObrisan = value.LogickiObrisan;
+
+
+
+
+
+                if (objekat.Uloga == "2") {
+
+
+
+
+
+                    objekat.BrojSakupljenihBodova = value.BrojSakupljenihBodova;
+                    objekat.ImeTipa = value.TipKorisnika.ImeTipa;
+
+                    var tipKupca;
+
+                    if (objekat.ImeTipa == "0") {
+                        tipKupca = "ZLATNI";
+                    } else if (objekat.ImeTipa == "1") {
+                        tipKupca = "SREBRNI";
+                    } else {
+                        tipKupca = "BRONZANI";
+                    }
+
+
+                    var pol;
+
+                    if (objekat.Pol == "0") {
+                        pol = "MUSKI";
+                    } else {
+                        pol = "ZENSKI";
+                    }
+
+                    var uloga;
+
+                    if (objekat.Uloga == "0") {
+                        uloga = "ADMINISTRATOR";
+                    } else if (objekat.Uloga == "1") {
+                        uloga = "PRODAVAC";
+                    } else {
+                        uloga = "KUPAC";
+                    }
+
+
+                    //alert(objekat.DatumRodjenja);
+
+                    var tacnoVreme = new Date(objekat.DatumRodjenja);
+
+
+                    var mesec = tacnoVreme.getMonth() + 1;
+                    var dan = tacnoVreme.getDate();
+                    var godina = tacnoVreme.getFullYear();
+
+                    var sat = tacnoVreme.getHours();
+                    var minuti = tacnoVreme.getMinutes();
+
+
+
+                    var datum = dan + "/" + mesec + "/" + godina;
+                    if (parseInt(minuti) < 10)
+                        minuti = "0" + minuti;
+                    if (parseInt(sat) < 10)
+                        sat = "0" + sat;
+                    var vreme = sat + ":" + minuti;
+
+
+                    sviKorisnici += `<div class="pojedinacna_manifestacija" style="height:460px">`;
+
+                    var bodovi = Math.round((parseFloat(objekat.BrojSakupljenihBodova) + Number.EPSILON) * 100) / 100;
+
+                    sviKorisnici += `
+
+
+                    <div class="elementi_manifestacije"  style="font-size:25px" >` + objekat.Username + `</div> <br />
+                    <div class="elementi_manifestacije" >` + "Password: " + objekat.Password + `</div> <br />
+                    <div class="elementi_manifestacije" >` + "Ime: " + objekat.Ime + `</div><br />
+                    <div class="elementi_manifestacije" >` + "Prezime: " + objekat.Prezime + `</div><br />
+
+                    <div class="elementi_manifestacije" >` + "Pol: " + pol + `</div> <br />
+                    <div class="elementi_manifestacije" >` + "Datum rodjenja: " + datum + `</div><br />
+                    <div class="elementi_manifestacije" >` + "Uloga: " + uloga + `</div><br />
+                    <div class="elementi_manifestacije" >` + "Tip kupca: " + tipKupca + `</div><br />
+                    <div class="elementi_manifestacije" >` + "Broj bodova: " + bodovi + `</div><br />`;
+
+
+
+                }
+
+
+
+                sviKorisnici += `</div >`;
+
+
+
+
+
+            });
+
+
+
+
+            sviKorisnici += `</div>`;
+
+            $("#prikaz").html(sviKorisnici);
+
+        }
+
+        function PrikaziDodajView() {
+
+
+
+            dodajManifestaciju = "";
+
+            dodajManifestaciju += `<div class="dodaj_manifestaciju">
+
+            <div class="labele_div">
+                <label for="naziv"> Naziv </label> <br />
+                <label for="tipManifestacije">Tip manifestacije</label>  <br />
+                <label for="brojMesta"> Broj mesta </label>  <br />
+                <label for="datumManifestacije"> Datum manifestacije </label>  <br />
+                <label for="cena"> Cena Regular </label>  <br />
+                <label for="ulica"> Ulica </label>  <br />
+                <label for="broj"> Broj ulice </label>  <br />
+                <label for="mesto"> Mesto </label>  <br />
+                <label for="postanskiBroj"> Postanski broj </label>  <br />
+                <label for="img">Izaberite sliku </label>  <br />
+
+
+            </div>
+
+            <div class="inputi_div_dodaj_manifestaciju">
+                <input type="text" name="nazivDodaj" /> <br />
+
+                <select class="dodajManifestacijuSelect" id="tipManifestacije" name="tipManfistacije">
+                    <option value="0">KONCERT</option>
+                    <option value="1">FESTIVAL</option>
+                    <option value="2">POZORISTE</option>
+                </select> <br />
+                <input  type="text" name="brojMesta" /> <br />
+                <input style="width: 150px" type="datetime-local" name="datumManifestacije" /> <br />
+                <input type="text" name="cena" /> <br />
+
+                <input type="text" name="ulica" /> <br />
+                <input type="text" name="broj" /> <br />
+                <input type="text" name="mestoDodaj" /> <br />
+                <input type="text" name="postanskiBroj" /> <br />
+                <input type="file" style="width:150px" id="slika" name="slika" accept="image/*"/><br />
+
+
+
+            </div>
+                
+                      
+            
+             <button onclick="DodajManifestaciju()" >Dodaj manifestaciju </button>
+          </div>   ` ;
+
+
+            $("#prikaz").html(dodajManifestaciju);
+        }
+
+        function IzmeniManifestaciju(naziv) {
+
+            $("#mapid").show();
+            $("#prikaz").css('height', '850px');
+
+
+
+            $.get("/prodavacPrikaz/vratiManifestaciju?naziv=" + naziv, function (data, status) {
+
+
+
+                var nazivManifestacije = data.Naziv;
+                var tipmanifestacije = data.TipManifestacije;
+                var brojMesta = data.BrojMesta;
+                var cena = data.Cena;
+                var ulica = data.MestoOdrzavanja.Adresa.Ulica;
+                var broj = data.MestoOdrzavanja.Adresa.Broj;
+                var mesto = data.MestoOdrzavanja.Adresa.Mesto;
+                var postanskiBroj = data.MestoOdrzavanja.Adresa.PostanskiBroj;
+                var datumVremeManifestacije = data.DatumVremeManifestacije;
+
+              
+
+             
+
+                izmenaManifestacije = "";
+
+                izmenaManifestacije += `<div class="dodaj_manifestaciju">
+
+            <div class="labele_div">
+                <label for="naziv"> Naziv </label> <br />
+                <label for="tipManifestacije">Tip manifestacije</label>  <br />
+                <label for="brojMesta"> Broj mesta </label>  <br />
+                <label for="datumManifestacije"> Datum manifestacije </label>  <br />
+                <label for="cena"> Cena Regular </label>  <br />
+                <label for="ulica"> Ulica </label>  <br />
+                <label for="broj"> Broj ulice </label>  <br />
+                <label for="mesto"> Mesto </label>  <br />
+                <label for="postanskiBroj"> Postanski broj </label>  <br />
+                <label for="img">Izaberite sliku </label>  <br />
+
+
+            </div>
+
+            <div class="inputi_div_dodaj_manifestaciju">
+                <input type="text" name="nazivDodaj" value="` + nazivManifestacije + `" disabled /> <br />`;
+
+                if (tipmanifestacije == "0") {
+                    
+
+                    izmenaManifestacije += `  <select class="dodajManifestacijuSelect" id="izmenaTip" value="` + tipmanifestacije + `" name="tipManfistacije">
+                        <option value="0 selected">KONCERT</option>
+                        <option value="1">FESTIVAL</option>
+                        <option value="2">POZORISTE</option>
+                    </select> <br />`
+                } else if (tipmanifestacije == "1") {
+
+                    izmenaManifestacije += `  <select class="dodajManifestacijuSelect" id="nacin" value="` + tipmanifestacije + `" name="tipManfistacije">
+                        <option value="0">KONCERT</option>
+                        <option value="1" selected>FESTIVAL</option>
+                        <option value="2">POZORISTE</option>
+                    </select> <br />`;
+
+                } else {
+
+                    izmenaManifestacije += `  <select class="dodajManifestacijuSelect" id="nacin" value="` + tipmanifestacije + `" name="tipManfistacije">
+                        <option value="0">KONCERT</option>
+                        <option value="1">FESTIVAL</option>
+                        <option value="2" selected>POZORISTE</option>
+                    </select> <br />`;
+                }
+
+                  
+
+                izmenaManifestacije +=` <input  type = "text" name = "brojMesta" value = "` + brojMesta + `" /> <br />
+                <input style="width: 150px" type="datetime-local" name="datumManifestacije" value="` + datumVremeManifestacije + `" /> <br />
+                <input type="text" name="cena" value="` + cena + `" /> <br />
+
+                <input type="text" name="ulica"  value="` + ulica + `" /> <br />
+                <input type="text" name="broj" value="` + broj +`" /> <br />
+                <input type="text" name="mestoDodaj" value = "` + mesto + `" /> <br />
+                <input type="text" name="postanskiBroj" value="` + postanskiBroj + `" /> <br />
+                <input type="file" style="width:150px" id="slika" name="slika" accept="image/*"/><br />
+
+
+
+            </div>
+                
+                      
+            
+             <button onclick="PotvrdaIzmeneManifestacije()" >Izmeni manifestaciju </button>
+          </div>   ` ;
+
+              
+
+
+                $("#prikaz").html(izmenaManifestacije);
+            });
+
+            var objekat = new Object();
+            objekat.NazivManifestacije = naziv;
+
+            $.ajax({
+                url: '/index/vratiKoordinateManifestacije',
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify(objekat),
+                success: function (data) {
+
+                    L.marker([45.249059739446885, 19.825387001037598]);
+                    mymap.removeLayer(marker);
+                    L.marker([data.Duzina, data.Sirina]).addTo(mymap).bindPopup("Stara lokacija").openPopup();;
+                  
+                   
+                    
+
+
+                }
+
+
+
+
+            });
+           
+
+        }
+
+
+        function PotvrdaIzmeneManifestacije() {
+
+            var objekat = new Object();
+            objekat.Naziv = $("input[type=text][name=nazivDodaj]").val();
+            objekat.TipManifestacije = $('#izmenaTip').val();
+            objekat.BrojMesta = $("input[type=text][name=brojMesta]").val();
+            objekat.DatumManifestacije = $("input[type=datetime-local][name=datumManifestacije]").val();
+            objekat.Cena = $("input[type=text][name=cena]").val();
+
+            objekat.Ulica = $("input[type=text][name=ulica]").val();
+            objekat.Broj = $("input[type=text][name=broj]").val();
+            objekat.Mesto = $("input[type=text][name=mestoDodaj]").val();
+            objekat.PostanskiBroj = $("input[type=text][name=postanskiBroj]").val();
+            objekat.Poster = $("input[type=file][name=slika]").val();
+
+            var validacijaObavestenje = "";
+            var validacijUspesna = true;
+
+            if (objekat.Naziv.trim() == "") {
+                validacijaObavestenje += "Morate uneti naziv manifestacije!\n";
+                validacijUspesna = false;
+            }
+
+            if (Number.isNaN(parseInt(objekat.BrojMesta))) {
+                validacijaObavestenje += "Broj mesta mora biti broj!\n";
+                validacijUspesna = false;
+            }
+
+            if (parseInt(objekat.BrojMesta) < 0) {
+                validacijaObavestenje += "Broj mesta mora biti pozitivan broj!\n";
+                validacijUspesna = false;
+
+            }
+
+            if (objekat.DatumManifestacije.trim() == "") {
+                validacijaObavestenje += "Morate izabrati datum!\n";
+                validacijUspesna = false;
+            }
+
+            //objekat.DatumManifestacije = new Date(objekat.DatumManifestacije);
+
+
+            //console.log( new Date(Date.now()));
+
+
+            if (new Date(objekat.DatumManifestacije) < new Date(Date.now())) {
+                //console.log("Datum manifestacije mora biti u buducem vremenu!");
+                validacijaObavestenje += "Datum manifestacije mora biti u buducem vremenu!\n";
+                validacijUspesna = false;
+
+            }
+
+
+
+
+            if (Number.isNaN(parseInt(objekat.Cena))) {
+                validacijaObavestenje += "Cena Regular mora biti broj!\n";
+                validacijUspesna = false;
+            }
+
+            if (parseInt(objekat.Cena) < 0) {
+                validacijaObavestenje += "Cena Regular karte mora biti pozitivan broj!\n";
+                validacijUspesna = false;
+
+            }
+
+
+
+            if (objekat.Ulica.trim() == "") {
+                validacijaObavestenje += "Morate uneti ulicu manifestacije!\n";
+                validacijUspesna = false;
+            }
+
+            if (Number.isNaN(parseInt(objekat.Broj))) {
+                validacijaObavestenje += "Broj ulice mora biti broj!\n";
+                validacijUspesna = false;
+            }
+
+            if (parseInt(objekat.Broj) <= 0) {
+                validacijaObavestenje += "Broj ulice mora biti pozitivan prirodan broj!\n";
+                validacijUspesna = false;
+
+            }
+
+            if (objekat.Mesto.trim() == "") {
+                validacijaObavestenje += "Morate uneti mesto(grad/drzava) manifestacije!\n";
+                validacijUspesna = false;
+            }
+
+            if (Number.isNaN(parseInt(objekat.PostanskiBroj))) {
+                validacijaObavestenje += "Postanski broj mora biti broj!\n";
+                validacijUspesna = false;
+            }
+
+            if (parseInt(objekat.PostanskiBroj) <= 0) {
+                validacijaObavestenje += "Postanski broj mora biti pozitivan prirodan broj!\n";
+                validacijUspesna = false;
+
+            }
+
+           
+
+
+
+            if (validacijUspesna) {
+
+                $.ajax({
+                    url: '/prodavacPrikaz/izmeniManifestaciju',
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    data: JSON.stringify(objekat),
+                    statusCode: {
+                        200: function (data) {
+
+                            var text = "Uspesno izmenjena manifestacija: " + data.Naziv;
+                            alert(text);
+
+                        },
+                        401: function (data) {
+
+                            alert(data.responseText);
+                        },
+                        403: function (data) {
+
+                            alert(data.responseText);
+
+
+                        }
+
+
+
+                    },
+                    success: function (data) {
+                        // console.log(data);
+                        //location.reload();
+                        location.href = "prodavacPrikaz.html";
+
+
+
+
+                    }
+
+
+
+
+                });
+            } else {
+                alert(validacijaObavestenje);
+            }
+
+            
+
+        }
+
+
+        function PrikaziIzmenaView(objekat) {
+
+            //console.log(data);
+
+            var izmenaFinal = "";
+
+            izmenaFinal += `<div class="dodaj_manifestaciju" style="height:500px">
+                    <h2 style="text-align:center">Izmena profila</h2>
+            <div class="labele_div" style="height:350px">
+                <label for="usernameRegistracija"> Username </label> <br />
+                <label for="passwordRegistracija"> Password </label>  <br />
+                <label for="imeRegistracija"> Ime </label>  <br />
+                <label for="prezimeRegistracija"> Prezime </label>  <br />
+                <label style="margin-top:30px" for="polRegistracija"> Pol </label>  <br />
+                <label style="margin-top:40px" for="datumRodjenjaRegistracija"> Datum rodjenja </label>  <br />
+
+            </div>
+
+            <div class="inputi_div_dodaj_manifestaciju" style="height:350px">
+                <input type="text" name="usernameRegistracija" value="` + objekat.Username + `"  disabled /> <br />
+                <input type="password" name="passwordRegistracija" value="` + objekat.Password + `"  /> <br />
+                <input type="text" name="imeRegistracija" value="` + objekat.Ime + `"  /> <br />
+                <input type="text" name="prezimeRegistracija" value="` + objekat.Prezime + `"  /> <br />`;
+
+            if (objekat.Pol == 0) {
+                izmenaFinal += ` <label for=" polRegistracija">Muski</label>
+                <input type="radio" name="polRegistracija" value="Muski" checked>
+
+                <label for="polRegistracija">Zenski</label>
+                <input type="radio" name="polRegistracija" value="Zenski">`;
+            } else {
+                izmenaFinal += ` <label for=" polRegistracija">Muski</label>
+                <input type="radio" name="polRegistracija" value="Muski" >
+
+                <label for="polRegistracija">Zenski</label>
+                <input type="radio" name="polRegistracija" value="Zenski" checked>`;
+            }
+
+
+            izmenaFinal += `
+
+                <input style="width: 150px; margin-top:30px;" type="datetime-local" name="datumRodjenjaRegistracija" value="` + objekat.DatumRodjenja + `" /> <br />
+
+
+                     </div>
+                    <button id="finalnaIzmena" style="margin-bottom:200px">Izmeni</button>
+             </div>`;
+
+
+
+            $(document).on("click", "#finalnaIzmena", function () {
+
+
+                var objekat = new Object();
+
+                objekat.Username = $("input[type=text][name=usernameRegistracija]").val();
+                objekat.Password = $("input[type=password][name=passwordRegistracija]").val();
+                objekat.Ime = $("input[type=text][name=imeRegistracija]").val();
+                objekat.Prezime = $("input[type=text][name=prezimeRegistracija]").val();
+                objekat.Pol = $("input[type=radio][name=polRegistracija]:checked").val();
+                objekat.DatumRodjenja = $("input[type=datetime-local][name=datumRodjenjaRegistracija]").val();
+
+                var validacijaObavestenje = "";
+                var validacijUspesna = true;
+
+                if (objekat.Username.trim() == "") {
+                    validacijaObavestenje += "Morate uneti username!\n";
+                    validacijUspesna = false;
+                }
+
+                if (objekat.Username.length < 6) {
+
+                    validacijaObavestenje += "Username mora imati bar 6 karaktera!\n";
+                    validacijUspesna = false;
+                }
+
+
+
+                //provera da li je jedinstven username??? ili cu na serveru
+
+                if (objekat.Password.trim() == "") {
+                    validacijaObavestenje += "Morate uneti password!\n";
+                    validacijUspesna = false;
+                }
+
+                if (objekat.Password.length < 6) {
+
+                    validacijaObavestenje += "Password mora imati bar 6 karaktera!\n";
+                    validacijUspesna = false;
+                }
+
+
+
+                if (objekat.Ime.trim() == "") {
+                    validacijaObavestenje += "Morate uneti ime!\n";
+                    validacijUspesna = false;
+                }
+
+                if (objekat.Prezime.trim() == "") {
+                    validacijaObavestenje += "Morate uneti prezime!\n";
+                    validacijUspesna = false;
+                }
+
+                if (objekat.Pol == "Muski") {
+                    objekat.Pol = 0;
+                } else {
+                    objekat.Pol = 1;
+                }
+
+                //console.log(objekat.DatumRodjenja);
+
+                if (objekat.DatumRodjenja.trim() == "") {
+                    validacijaObavestenje += "Morate izabrati datum rodjenja!\n";
+                    validacijUspesna = false;
+                }
+
+                //console.log(new Date(Date.now()));
+
+                if (new Date(objekat.DatumRodjenja) >= new Date(Date.now())) {
+                    //console.log("Datum manifestacije mora biti u buducem vremenu!");
+                    validacijaObavestenje += "Datum rodjenja mora biti u proslom vremenu!\n";
+                    validacijUspesna = false;
+                }
+
+
+
+
+                if (validacijUspesna) {
+                    $.ajax({
+                        url: '/prodavacPrikaz/izmeniProdavca',
+                        type: "POST",
+                        contentType: "application/json; charset=utf-8",
+                        dataType: "json",
+                        data: JSON.stringify(objekat),
+                        statusCode: {
+                            200: function () {
+
+
+                                alert("Uspesno izmenjen prodavac!");
+
+                            },
+                            403: function (data) {
+
+                                alert(data.responseText);
+
+
+                            }
+
+
+
+                        },
+
+                        complete: function () {
+
+                            location.href = "prodavacPrikaz.html";
+
+                        }
+
+                    });
+                } else {
+                    alert(validacijaObavestenje);
+                }
+
+
+            });
+
+
+
+
+            $("#prikaz").html(izmenaFinal);
+        }
+
+        function PrikaziPregledProfila(data) {
+
+            var izmenaProfila = "";
+
+
+            var objekat = new Object();
+
+            objekat.Username = `${data.Username}`;
+            objekat.Password = `${data.Password}`;
+            objekat.Ime = `${data.Ime}`;
+            objekat.Prezime = `${data.Prezime}`;
+            objekat.Pol = `${data.Pol}`;
+            objekat.DatumRodjenja = `${data.DatumRodjenja}`;
+            objekat.Uloga = `${data.Uloga}`;
+
+            //console.log(objekat);
+
+            var pol;
+
+            if (objekat.Pol == "0") {
+                pol = "MUSKI";
+            } else {
+                pol = "ZENSKI";
+            }
+
+
+            //alert(objekat.DatumRodjenja);
+
+            var tacnoVreme = new Date(objekat.DatumRodjenja);
+
+
+            var mesec = tacnoVreme.getMonth() + 1;
+            var dan = tacnoVreme.getDate();
+            var godina = tacnoVreme.getFullYear();
+
+            var sat = tacnoVreme.getHours();
+            var minuti = tacnoVreme.getMinutes();
+
+
+
+            var datum = dan + "/" + mesec + "/" + godina;
+            if (parseInt(minuti) < 10)
+                minuti = "0" + minuti;
+            if (parseInt(sat) < 10)
+                sat = "0" + sat;
+            var vreme = sat + ":" + minuti;
+
+
+
+            izmenaProfila += `<div class="dodaj_manifestaciju" style="height:500px">
+                    <h2 style="text-align:center">Pregled profila</h2>
+            <div class="labele_div" style="height:350px">
+                <label for="usernameRegistracija"> Username </label> <br />
+                <label for="passwordRegistracija"> Password </label>  <br />
+                <label for="imeRegistracija"> Ime </label>  <br />
+                <label for="prezimeRegistracija"> Prezime </label>  <br />
+                <label style="margin-top:30px" for="polRegistracija"> Pol </label>  <br />
+                <label style="margin-top:40px" for="datumRodjenjaRegistracija"> Datum rodjenja </label>  <br />
+
+            </div>
+
+            <div class="inputi_div_dodaj_manifestaciju" style="height:350px">
+                <input type="text" name="usernameRegistracija" value="` + objekat.Username + `"  disabled /> <br />
+                <input type="password" name="passwordRegistracija" value="` + objekat.Password + `" disabled /> <br />
+                <input type="text" name="imeRegistracija" value="` + objekat.Ime + `" disabled /> <br />
+                <input type="text" name="prezimeRegistracija" value="` + objekat.Prezime + `" disabled /> <br />
+
+                <input type="text" style=" margin-top:27px;" name="polRegistracija" value="` + pol + `" disabled /> <br />
+
+
+
+                <input style="width: 170px; margin-top:35px;" type="text" name="datumRodjenjaRegistracija" value="` + datum + `" disabled /> <br />
+
+
+
+
+            </div>
+            <button id="pregledProdavca" style="margin-bottom:200px">Izmeni</button>
+        </div>`;
+
+
+
+            $(document).on("click", "#pregledProdavca", function () {
+
+
+                PrikaziIzmenaView(objekat);
+
+
+            });
+
+
+
+
+            $("#prikaz").html(izmenaProfila);
+        }
+
+
+   
+
+
+        function PrikaziKarteOpcije() {
+
+            $('#pretraga_karata').show();
+            $('#karte_opcije1').show();
+            $('#karte_opcije2').show();
+
+        }
+
+        function NemojPrikazatiOpcijeKarte() {
+            $('#pretraga_karata').hide();
+            $('#karte_opcije1').hide();
+            $('#karte_opcije2').hide();
+        }
+
+        function NemojPrikazatiOpcijeManifestacije() {
+            $('#pretraga_manifestacija').hide();
+            $('#manifestacija_opcije1').hide();
+            $('#manifestacija_opcije2').hide();
+        }
+
+        function PrikaziOpcijeManifestacije() {
+
+            $('#pretraga_manifestacija').show();
+            $('#manifestacija_opcije1').show();
+            $('#manifestacija_opcije2').show();
+        }
+
+
+
+    </script>
+
+</head>
+<body>
+
+
+    <div class="menu_div">
+        <div class="menu_izbor" style="float: left" id="prikazManifestacijaSvih"> Manifestacije</div>
+        <div class="menu_izbor" style="float: left" id="dodajManifestaciju"> Dodaj manifestaciju</div>
+        <div class="menu_izbor" style="float: left" id="mojeManifestacije"> Moje manifestacije</div>
+        <div class="menu_izbor" style="float: left" id="rezervisaneKarte"> Rezervisane karte</div>
+        <div class="menu_izbor" style="float: left" id="kupciKarata"> Prikazi kupce </div>
+        <div class="menu_izbor" style="float: left" id="mojProfilProdavac"> Moj profil</div>
+
+        <!----<div class="menu_izbor" style="margin-right: 5px" id="registracijaProdavac"> Registracija </div>--->
+        <div id="izlogujProdavac" class="menu_izbor" style="margin-right: 5px"> Izloguj se </div>
+
+    </div>
+
+
+    <div id="pretraga_manifestacija" class="pretraga_manifestacija">
+
+        <label for="naziv"> Naziv </label>
+        <input type="text" name="naziv" />
+
+        <label for="mesto"> Ulica </label>
+        <input type="text" name="mesto" />
+
+        <label for="datum_od"> Datum od </label>
+        <input style="width: 125px" type="date" name="datum_od" />
+
+        <label for="datum_do"> Datum do </label>
+        <input style="width: 125px" type="date" name="datum_do" />
+
+        <label for="lokacija"> Lokacija </label>
+        <input type="text" name="lokacija" />
+
+        <label for="cena_od"> Cena od </label>
+        <input type="text" name="cena_od" />
+
+        <label for="cena_do"> Cena do </label>
+        <input type="text" name="cena_do" />
+
+        <input type="submit" value=" Pretrazi " id="pretraziManifestaciju">
+
+
+
+
+    </div>
+
+
+    <div id="manifestacija_opcije1" class="manifestacija_opcije">
+
+        <label> Sortiraj po: </label>
+
+        <input type="radio" name="nacin" value="naziv" checked>
+        <label> Sortiranje po nazivu </label>
+
+        <input type="radio" name="nacin" value="datumOdrzavanja">
+        <label> Sortiranje po datumu </label>
+
+        <input type="radio" name="nacin" value="cena">
+        <label> Sortiranje po ceni </label>
+
+        <input type="radio" name="nacin" value="mesto">
+        <label> Sortiranje po mestu </label>
+
+
+        <label id="pomeri_labelu"> Rastu&#263;e ili opadaju&#263;e: </label>
+
+        <input type="radio" name="sort" value="rastuce" checked>
+        <label> Rastu&#263;e </label>
+
+        <input type="radio" name="sort" value="opadajuce">
+        <label> Opadaju&#263;e </label>
+
+        <input type="submit" value=" Sortiraj " id="sortiranje">
+
+    </div>
+
+
+
+
+
+    <div id="manifestacija_opcije2" class="manifestacija_opcije">
+
+        <label style="float:left; ">Filtriranje:   </label>
+
+        <label style="float:left;" id="pomeri_labelu">Tip manifestacije   </label>
+        <select style="float:left; margin:2px;" id="nacin" name="tipManfistacije">
+            <option value="0">KONCERT</option>
+            <option value="1">FESTIVAL</option>
+            <option value="2">POZORISTE</option>
+        </select>
+
+        <label style="float:left; " id="pomeri_labelu">Prikaz nerasprodatih   </label>
+        <input style="float:left;" type="checkbox" name="nerasprodate">
+        <input style="margin-left:10px;" type="submit" value="Filtriraj " id="filter">
+
+
+
+
+    </div>
+
+    <div id="pretraga_karata" class="pretraga_manifestacija">
+
+        <label for="nazivManifestacije"> Naziv manifestacije </label>
+        <input type="text" name="nazivManifestacije" />
+
+
+        <label for="cenaKarteOD"> Cena od </label>
+        <input type="text" name="cenaKarteOD" />
+
+        <label for="cenaKarteDo"> Cena do </label>
+        <input type="text" name="cenaKarteDo" />
+
+
+        <label for="datumOD"> Datum od </label>
+        <input style="width: 125px" type="date" name="datumOD" />
+
+        <label for="datumDO"> Datum do </label>
+        <input style="width: 125px" type="date" name="datumDO" />
+
+
+
+        <input type="submit" style="width:110px;" value=" PretraziKarte " id="pretraziKarte">
+
+
+
+
+    </div>
+
+
+
+
+    <div id="karte_opcije1" class="manifestacija_opcije">
+
+        <label> Sortiraj po: </label>
+
+        <input type="radio" name="nacinKarte" value="naziv" checked>
+        <label> Sortiranje po nazivu </label>
+
+        <input type="radio" name="nacinKarte" value="datumOdrzavanja">
+        <label> Sortiranje po datumu </label>
+
+        <input type="radio" name="nacinKarte" value="cena">
+        <label> Sortiranje po ceni </label>
+
+
+
+        <label id="pomeri_labelu"> Rastu&#263;e ili opadaju&#263;e: </label>
+
+        <input type="radio" name="sortKarte" value="rastuce" checked>
+        <label> Rastu&#263;e </label>
+
+        <input type="radio" name="sortKarte" value="opadajuce">
+        <label> Opadaju&#263;e </label>
+
+        <input type="submit" value=" Sortiraj " id="sortiranjeKarata">
+
+    </div>
+
+
+
+
+
+    <div id="karte_opcije2" class="manifestacija_opcije">
+
+        <label style="float:left; ">Filtriranje:   </label>
+
+        <label style="float:left;" id="pomeri_labelu">Tip karte   </label>
+        <select style="float:left; margin:2px;" id="tipKarte" name="tipKarte">
+            <option value="0">VIP</option>
+            <option value="1">REGULAR</option>
+            <option value="2">FAN_PIT</option>
+        </select>
+
+
+        <label style="float:left;" id="pomeri_labelu"> Status karte   </label>
+        <select style="float:left; margin:2px;" id="statusKarte" name="statusKarte">
+            <option value="0">REZERVISANA</option>
+            <option value="1">ODUSTANAK</option>
+
+        </select>
+
+
+        <input style="margin-left:10px;" type="submit" value="Filtriraj " id="filterKarte">
+
+
+
+
+    </div>
+
+
+    <div id="prikaz">
+
+
+
+
+
+    </div>
+
+    <div id="mapid" class="mapa_div"></div>
+
+    
+
+    <script>
+        var mymap = L.map('mapid').setView([45.249059739446885, 19.825387001037598], 13);
+
+        L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}', {
+            attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, <a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+            maxZoom: 18,
+            id: 'mapbox/streets-v11',
+            tileSize: 512,
+            zoomOffset: -1,
+            accessToken: 'pk.eyJ1IjoicHJvYm5pZ2ciLCJhIjoiY2tmNXprMWNvMDlzMTJyb3p1N2Q4M3ZmaCJ9.a5MRjmQP2gh0nCvEmm_w4Q'
+        }).addTo(mymap);
+
+       
+
+
+
+        var marker = L.marker([45.249059739446885, 19.825387001037598]).addTo(mymap);
+      
+
+        function onMapClick(e) {
+
+            /*
+            var objekat = new Object();
+            objekat.NazivManifestacije = $("input[type=text][name=nazivDodaj]").val();
+            console.log(objekat.NazivManifestacije);
+            console.log($("input[type=text][name=nazivDodaj]").val());
+
+
+            
+            if (objekat.NazivManifestacije != undefined) {
+
+                alert("USAO");
+                $.ajax({
+                    url: '/index/vratiKoordinateManifestacije',
+                    type: "POST",
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "json",
+                    data: JSON.stringify(objekat),
+                    success: function (data) {
+                        console.log(data);
+                        // alert(data.Sirina);
+
+                        // alert(data.Duzina);
+                        var marker = L.marker([45.249059739446885, 19.825387001037598]);
+                        mymap.removeLayer(marker);
+                        marker = L.marker([data.Duzina, data.Sirina]);
+                        mymap.removeLayer(marker);
+
+                    }
+
+
+
+
+                });
+
+            } 
+
+
+                */
+           
+            mymap.removeLayer(marker);
+            marker = L.marker([e.latlng.lat, e.latlng.lng]).addTo(mymap);
+            alert("You clicked the map at " + e.latlng);
+
+
+            var koordinate = new Object();
+            koordinate.Duzina = e.latlng.lat;
+            koordinate.Sirina = e.latlng.lng;
+
+            $.ajax({
+                url: '/prodavacPrikaz/sacuvajKoordinate',
+                type: "POST",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                data: JSON.stringify(koordinate),
+                success: function (data) {
+                    console.log("uspesno");
+
+
+                }
+
+
+
+
+            });
+
+          
+
+            //console.log(e.latlng);
+           // alert(e.latlng.lng);
+            //console.log(marker);
+
+        }
+
+        mymap.on('click', onMapClick);
+
+    </script>
+
+
+
+
+
+    <footer>Nikola Mijoni&#263; PR49/2017</footer>
+
+
+
+
+
+
+
+</body>
+</html>

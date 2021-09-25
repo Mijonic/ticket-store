@@ -1,0 +1,158 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="/Content/Site.css" />
+    <meta charset="utf-8" />
+    <script src="../Scripts/jquery-3.3.1.min.js"></script>
+
+    <script>
+
+        $(document).ready(function () {
+
+            //alert("Spreman");
+            $("#manifestacijeLogovanje").click(function () {
+
+                location.href = "index.html";
+
+            });
+
+            $("#registracijaLogovanje").click(function () {
+
+                location.href = "Registracija.html";
+
+            });
+
+            $("#logovanjeLogovanje").click(function () {
+
+                location.href = "Logovanje.html";
+
+            });
+
+            $("#ulogujSeButton").click(function () {
+
+                var objekat = new Object();
+                objekat.Username = $("input[type=text][name=usernameLogovanje]").val();
+                objekat.Password = $("input[type=password][name=passwordLogovanje]").val();
+
+
+                var validacijaPoruka = "";
+                var validacija = true;
+
+                if (objekat.Username.trim() == "") {
+                    validacijaPoruka += "Morate uneti username!\n";
+                    validacija = false;
+                }
+
+                if (objekat.Username.length < 6) {
+                    validacijaPoruka += "Username mora ima bar 6 karaktera!\n";
+                    validacija = false;
+                }
+
+
+                if (objekat.Password.trim() == "") {
+                    validacijaPoruka += "Morate uneti password!\n";
+                    validacija = false;
+                }
+
+                if (objekat.Password.length < 6) {
+                    validacijaPoruka += "password mora ima bar 6 karaktera!\n";
+                    validacija = false;
+                }
+
+                if (!validacija) {
+                   
+                    alert(validacijaPoruka);
+                } else {
+
+
+                    
+                    
+                    $.ajax({
+                        url: '/index/ulogujKorisnika',
+                        type: 'POST',
+                        contentType: 'application/json; charset=utf-8',
+                        dataType: 'json',
+                        data: JSON.stringify(objekat),
+                        statusCode: {
+                            200: function (data) {
+                                //var text = data.Username + ", uspesno ste se ulogovali!";
+
+                                var object = JSON.stringify(data);
+                                object = jQuery.parseJSON(object);
+                             
+
+                                var poruka = object.Username + ", uspesno ste se ulogovali!";
+                                alert(poruka);
+
+                                if (object.Uloga == "0") {
+                                    location.href = "adminPrikaz.html";
+                                } else if (object.Uloga == "1") {
+                                    location.href = "prodavacPrikaz.html";
+                                } else {
+
+                                    location.href = "kupacPrikaz.html";
+                                }
+
+                                
+                            },
+                            403: function (data) {
+
+                                
+                                alert(data.responseText);
+
+
+                            }
+                        },
+                        complete: function () {
+                            //location.href = "index.html";
+                        }
+                    });
+
+
+                  
+
+                }
+
+
+
+                
+            });
+
+            
+
+        });
+
+    </script>
+
+
+    <title>Logovanje</title>
+    
+</head>
+<body>
+
+
+    <div class="menu_div">
+        <div id="manifestacijeLogovanje" class="menu_izbor" style="float: left"> Manifestacije</div>
+        <div id="registracijaLogovanje" class="menu_izbor" style="margin-right: 5px"> Registracija </div>
+        <div id="logovanjeLogovanje" class="menu_izbor"> Logovanje </div>
+
+    </div>
+
+    <div class="logovanje_div">
+
+        <h3 style="text-align:center;">Logovanje</h3>
+        <label class = "logovanje_labele"  for="usernameLogovanje">Username</label>
+        <input class = "logovanje_inputi" type="text" name="usernameLogovanje" /> <br />
+
+        <label class = "logovanje_labele"  for="passwordLogovanje">Password</label>
+        <input style="margin-left:55px" class = "logovanje_inputi" type="password" name="passwordLogovanje" /> <br />
+
+        <button style="margin-left:170px; margin-top:30px;" id="ulogujSeButton"> Uloguj se </button>
+
+
+    </div>
+
+    <footer>Nikola Mijoni&#263; PR49/2017</footer>
+
+</body>
+</html>

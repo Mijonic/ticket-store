@@ -1,0 +1,399 @@
+﻿/*body {
+    padding-top: 50px;
+    padding-bottom: 20px;
+    background-color: #cccccc;
+}
+
+    */
+
+body {
+    min-width: 1310px;
+    min-height: 700px;
+    background-color: #d9d9d9;
+
+}
+
+
+
+/*
+
+.body-content {
+    padding-left: 15px;
+    padding-right: 15px;
+}
+*/
+/* Set width on the form input elements since they're 100% wide by default */
+input,
+select,
+textarea {
+    max-width: 280px;
+}
+
+.menu_div {
+    background-color: #808080;
+    margin: 0px 0px 0px 0px;
+    width: 100%;
+    height: 50px;
+    padding-top: 0px;
+    float: left;
+    display: inline;
+}
+
+.menu_izbor {
+    background-color: #b3b3b3;
+    display: inline;
+    float: right;
+    width: 100px;
+    height: 40px;
+    color: white;
+    border: 1px solid #595959;
+    margin-left: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 3px;
+    font-size: 18px;
+    font-family: 'Times New Roman';
+}
+
+ .menu_izbor:hover {
+        display: block;
+        background-color: #d9d9d9;
+        border: 2px solid #595959;
+        margin-left: 6px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 2px;
+        color: #FFFAFA;
+ }
+
+.pretraga_manifestacija {
+    float: left;
+    margin-top: 10px;
+    background-color: #808080;
+    width: 100%;
+    height: 30px;
+    color: white;
+    padding-top: 5px;
+    padding-left: 5px;
+}
+
+.pretraga_manifestacija > input {
+        width: 70px;
+        margin-right: 20px;
+        justify-content: center;
+        align-items: center;
+        margin-top: 2px;
+}
+
+
+
+
+
+.manifestacija_opcije {
+    float: left;
+    background-color: #808080;
+    display: inline-block;
+    width: 100%;
+    height: 30px;
+    color: white;
+    padding-top: 5px;
+    padding-left: 5px;
+}
+
+
+
+    #pomeri_labelu {
+        padding-left: 55px;
+    }
+
+footer {
+    background-color: #808080;
+    width: 100%;
+    height: 35px;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: fixed;
+    bottom: 0px;
+    width: 100%;
+}
+
+
+
+.prikaz_manifestacija {
+    background-color: #666666;
+    width: 1200px;
+    display: inline-block;
+    margin-top: 50px;
+    margin-bottom: 100px;
+    margin-left: 70px;
+    margin-right: 70px;
+}
+
+
+
+
+.pojedinacna_manifestacija {
+    float: left;
+    background-color: #8c8c8c;
+    width: 240px;
+    height: 360px;
+    margin: 10px 10px 10px 37px; 
+    border: 2px solid #4d4d4d;
+    color: white;
+    justify-content: center;
+    align-items: center;
+    opacity: 0.85;
+}
+
+.pojedinacna_manifestacija:hover {
+        
+        opacity: 1;
+        float: left;
+        margin: 7px 7px 7px 34px;
+        background-color: #a6a6a6;
+        border: 5px solid white;
+        color: #FFFAFA;
+}
+
+.elementi_manifestacije {
+    margin-top: 0px;
+    width: 100%;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+  
+
+.slika_manifestacija{
+
+    width: 240px;
+    height: 200px;
+    margin-bottom:0px;
+    margin-top:5px;
+    
+
+}
+
+
+.cena_manifestacija {
+    margin-top: 0px;
+    width: 100%;
+    height: 30px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: red;
+    font-family: 'Palatino Linotype';
+    font-size: 17px;
+    text-decoration:wavy;
+}
+
+
+
+
+.dodaj_manifestaciju_labela {
+    margin-left: 200px;
+    padding-top: 10px;
+}
+
+
+.dodaj_manifestaciju {
+    background-color: #666666;
+    display: inline-block;
+    margin-top: 50px;
+    height: 600px;
+    margin-left: 350px;
+    margin-right: 350px;
+    color: white;
+    margin-bottom: 200px;
+    border: 5px solid #999999;
+}
+
+
+
+.dodaj_manifestaciju > button
+{
+    margin: 10px 225px 300px 225px; 
+    width:150px;
+    height:25px;
+}
+
+   
+
+
+.labele_div {
+    float: left;
+    width: 250px;
+    height: 500px;
+    margin-left: 20px;
+    display: inline-block;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+}
+
+    .labele_div > label {
+        margin-top: 10px;
+        
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+.inputi_div_dodaj_manifestaciju {
+    float: left;
+    width: 250px;
+    height: 500px;
+    margin-left: 50px;
+    
+    display: inline-block;
+    justify-content: center;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.dodajManifestacijuSelect {
+    margin-top: 7px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+    .inputi_div_dodaj_manifestaciju > input, select {
+        margin-top: 7px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+.logovanje_div {
+    margin-left: 450px;
+    margin-right: 450px;
+    margin-top: 60px;
+    width: 400px;
+    height: 250px;
+    display: inline-block;
+    background-color: #666666;
+    color: white;
+    border: 5px solid #999999;
+}
+
+
+.logovanje_inputi {
+    float: left;
+    margin-left: 50px;
+    margin-top: 10px;
+}
+
+.logovanje_labele {
+    float: left;
+    margin-left: 50px;
+    margin-top: 10px;
+}
+
+.pomocni_kupac {
+    background-color: #666666;
+    width: 100%;
+    height: 70px;
+    color: white;
+}
+
+
+
+.detalji_manifestacije {
+    display:inline-block;
+}
+
+.komentari_manifestacije {
+    background-color: #666666;
+    width: 400px;
+    margin-left: 50px;
+    margin-top: 50px;
+    color: white;
+    margin-bottom: 200px;
+    float: left;
+    border: 5px solid #999999;
+}
+
+.pojedinacni_komentar {
+    width: 398px;
+    height: 280px;
+    margin-top: 20px;
+    border: 2px solid #999999;
+}
+
+.text_komentara{
+
+    width:300px;
+    height:200px;
+    float:left;
+    margin-left:50px;
+    resize: none;
+    max-height:200px;
+    min-height:100px;
+    margin-top:10px;
+    
+}
+
+#labele_pojedinacni_komentar{
+
+    padding-left: 30px;
+
+}
+
+.rezervacija_karte {
+    background-color: #666666;
+    width: 400px;
+    height: 250px;
+    margin-left: 50px;
+    margin-top: 50px;
+    color: white;
+    margin-bottom: 200px;
+    float: left;
+    border: 5px solid #999999;
+}
+
+.rezervacija_pomoc{
+
+    float: left;
+    margin-left:40px;
+    margin-top: 15px;
+
+}
+
+.pregled_rezervacije {
+    background-color: #666666;
+    width: 400px;
+    height: 350px;
+    margin-left: 50px;
+    margin-top: 50px;
+    color: white;
+    margin-bottom: 200px;
+    float: left;
+    border: 5px solid #999999;
+}
+
+.div_komentarisanje {
+    background-color: #666666;
+    width: 400px;
+    height: 400px;
+    margin-left: 50px;
+    float: left;
+    color: white;
+    margin-top: 50px;
+    border: 5px solid #999999;
+}
+
+.mapa_div {
+    border: 5px solid #999999;
+    margin-left:400px;
+    height: 300px;
+    width: 500px;
+    margin-bottom: 100px;
+}

@@ -1,0 +1,4 @@
+zokazoka|zokazoka|Zorana|Zoranic|ZENSKI|20-07-2003 04:44:00|KUPAC|False|116.774|BRONZANI|0|250
+stefan|stefan|Stefan|Stefanovic|MUSKI|30-10-1996 02:42:00|KUPAC|False|-3.325|BRONZANI|0|250
+korisnik|123123|korisnik|korisnik|MUSKI|12-10-1999 07:31:00|KUPAC|True|-23.94|BRONZANI|0|250
+brisanje|brisanje|proba|proba|MUSKI|08-06-2008 07:52:00|KUPAC|True|0|BRONZANI|0|250
